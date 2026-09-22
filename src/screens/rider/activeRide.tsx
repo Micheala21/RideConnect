@@ -5,12 +5,13 @@ import {
   View,
   Text,
   StyleSheet,
+  TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import Colors from "../../constants/colors";
 
-export default function TripHistoryScreen() {
+export default function ActiveRideScreen() {
   return (
     <SafeAreaView style={styles.container}>
 
@@ -18,25 +19,25 @@ export default function TripHistoryScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.heading}>
-            Past Trips
+            Active Ride
           </Text>
 
           <Text style={styles.subHeading}>
-            View your previous rides and trip history.
+            Track your current ride.
           </Text>
         </View>
 
         <View style={styles.headerIcon}>
           <Ionicons
-            name="time-outline"
+            name="navigate-outline"
             size={24}
             color={Colors.rider}
           />
         </View>
       </View>
 
-      {/* Empty State */}
-      <View style={styles.emptyCard}>
+      {/* Active Ride Card */}
+      <View style={styles.rideCard}>
 
         <View style={styles.iconContainer}>
           <Ionicons
@@ -46,26 +47,59 @@ export default function TripHistoryScreen() {
           />
         </View>
 
-        <Text style={styles.emptyTitle}>
-          No Past Trips
+        <Text style={styles.title}>
+          No Active Ride
         </Text>
 
-        <Text style={styles.emptyText}>
-          You haven't completed any rides yet.
-          Once you complete a ride, your trip
-          details will appear here.
+        <Text style={styles.description}>
+          You currently don't have an active ride.
+          Once you book a ride, you will be able to
+          track your driver and trip progress here.
         </Text>
 
-        <View style={styles.infoRow}>
+        {/* Ride Status */}
+        <View style={styles.statusContainer}>
+          <View style={styles.statusIcon}>
+            <Ionicons
+              name="location-outline"
+              size={20}
+              color={Colors.rider}
+            />
+          </View>
+
+          <View style={styles.statusContent}>
+            <Text style={styles.statusTitle}>
+              Ride Status
+            </Text>
+
+            <Text style={styles.statusText}>
+              Waiting for a ride to be booked
+            </Text>
+          </View>
+        </View>
+
+      </View>
+
+      {/* Information Section */}
+      <View style={styles.infoCard}>
+
+        <View style={styles.infoIcon}>
           <Ionicons
             name="information-circle-outline"
-            size={20}
+            size={22}
             color={Colors.rider}
           />
+        </View>
+
+        <View style={styles.infoContent}>
+          <Text style={styles.infoTitle}>
+            Your active ride will appear here
+          </Text>
 
           <Text style={styles.infoText}>
-            Your completed trips will be saved here
-            for easy access.
+            After confirming a booking, you can view
+            your driver's details, pickup location,
+            destination and trip progress.
           </Text>
         </View>
 
@@ -101,8 +135,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     marginTop: 6,
-    maxWidth: 270,
-    lineHeight: 20,
   },
 
   headerIcon: {
@@ -121,7 +153,7 @@ const styles = StyleSheet.create({
     },
   },
 
-  emptyCard: {
+  rideCard: {
     backgroundColor: Colors.white,
     borderRadius: 24,
     paddingHorizontal: 25,
@@ -146,37 +178,97 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
 
-  emptyTitle: {
+  title: {
     fontSize: 23,
     fontWeight: "700",
     color: Colors.primary,
     marginBottom: 10,
   },
 
-  emptyText: {
+  description: {
     fontSize: 15,
     color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 23,
-    maxWidth: 300,
+    maxWidth: 310,
   },
 
-  infoRow: {
+  statusContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F7F9FC",
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 15,
     marginTop: 25,
     width: "100%",
   },
 
-  infoText: {
+  statusIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  statusContent: {
     flex: 1,
+    marginLeft: 12,
+  },
+
+  statusTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 3,
+  },
+
+  statusText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+
+  infoCard: {
+    flexDirection: "row",
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 18,
+    marginTop: 18,
+    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
+
+  infoIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#EEF5FB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  infoContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 5,
+  },
+
+  infoText: {
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 19,
-    marginLeft: 10,
   },
 
 });

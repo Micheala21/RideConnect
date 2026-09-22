@@ -1,19 +1,21 @@
 import React from "react";
+
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
-  KeyboardTypeOptions,
+  TextInputProps,
 } from "react-native";
+
 import Colors from "../constants/colors";
 
-interface CustomInputProps {
+interface CustomInputProps
+  extends TextInputProps {
   label: string;
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
-  keyboardType?: KeyboardTypeOptions;
 }
 
 export default function CustomInput({
@@ -21,19 +23,21 @@ export default function CustomInput({
   placeholder,
   value,
   onChangeText,
-  keyboardType = "default",
+  ...textInputProps
 }: CustomInputProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>
+        {label}
+      </Text>
 
       <TextInput
         style={styles.input}
         placeholder={placeholder}
         placeholderTextColor="#999"
-        keyboardType={keyboardType}
         value={value}
         onChangeText={onChangeText}
+        {...textInputProps}
       />
     </View>
   );

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import {
   SafeAreaView,
   ScrollView,
@@ -7,63 +8,186 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+
 import Checkbox from "expo-checkbox";
+
 import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import {
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
 
 import Colors from "../../../constants/colors";
-import { RootStackParamList } from "../../../navigation/AppNavigator";
+
+import {
+  RootStackParamList,
+} from "../../../navigation/AppNavigator";
 
 import ScreenHeader from "../../../components/ScreenHeader";
 import CustomInput from "../../../components/CustomInput";
 import PasswordInput from "../../../components/PasswordInput";
 import CustomButton from "../../../components/CustomButton";
 
-type NavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "RiderRegister"
->;
+import { supabase } from "../../../lib/supabaseClient";
+
+type NavigationProp =
+  NativeStackNavigationProp<
+    RootStackParamList,
+    "RiderRegister"
+  >;
 
 export default function RiderRegisterScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation =
+    useNavigation<NavigationProp>();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [acceptTerms, setAcceptTerms] = useState(false);
+  // ================= PERSONAL INFORMATION =================
 
-  const handleRegister = () => {
-    console.log({
-      firstName,
-      lastName,
-      email,
-      phoneNumber,
-      password,
-      confirmPassword,
-      acceptTerms,
-    });
+  const [firstName, setFirstName] =
+    useState("");
 
-    // TODO:
-    // Validate fields
-    // Register user with backend
-    // Navigate to Rider Home
+  const [lastName, setLastName] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  const [phoneNumber, setPhoneNumber] =
+    useState("");
+
+  // ================= PASSWORD =================
+
+  const [password, setPassword] =
+    useState("");
+
+  const [confirmPassword, setConfirmPassword] =
+    useState("");
+
+  // ================= TERMS =================
+
+  const [acceptTerms, setAcceptTerms] =
+    useState(false);
+
+  // ==================================================
+  // REGISTER
+  // ==================================================
+
+  const handleRegister = async () => {
+    try {
+      // ================= VALIDATION =================
+
+      if (
+        !firstName ||
+        !lastName ||
+        !email ||
+        !phoneNumber ||
+        !password ||
+        !confirmPassword
+      ) {
+        console.log(
+          "Please complete all fields."
+        );
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        console.log(
+          "Passwords do not match."
+        );
+        return;
+      }
+
+      if (!acceptTerms) {
+        console.log(
+          "Please accept the Terms & Conditions."
+        );
+        return;
+      }
+
+      // ================= SUPABASE AUTH =================
+
+      const {
+        data,
+        error,
+      } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (error) {
+        console.error(
+          "Supabase registration error:",
+          error.message
+        );
+        return;
+      }
+
+      if (!data.user) {
+        console.error(
+          "User was not created."
+        );
+        return;
+      }
+
+      // ================= CREATE PROFILE =================
+
+      const {
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .insert({
+          id: data.user.id,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone_number: phoneNumber.trim(),
+          role: "rider",
+        });
+
+      if (profileError) {
+        console.error(
+          "Profile creation error:",
+          profileError.message
+        );
+        return;
+      }
+
+      console.log(
+        "Rider registered successfully!"
+      );
+
+      navigation.navigate("RiderHome");
+
+    } catch (error) {
+      console.error(
+        "Registration error:",
+        error
+      );
+    }
   };
 
+  // ==================================================
+  // UI
+  // ==================================================
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={
+          styles.scrollContainer
+        }
       >
+        {/* ================= HEADER ================= */}
+
         <ScreenHeader
           title="Rider Registration"
           subtitle="Create your RideConnect account"
           color={Colors.rider}
           icon="person-add"
         />
+
+        {/* ================= PERSONAL INFORMATION ================= */}
 
         <CustomInput
           label="First Name"
@@ -95,6 +219,8 @@ export default function RiderRegisterScreen() {
           keyboardType="phone-pad"
         />
 
+        {/* ================= PASSWORD ================= */}
+
         <PasswordInput
           label="Password"
           value={password}
@@ -107,35 +233,73 @@ export default function RiderRegisterScreen() {
           onChangeText={setConfirmPassword}
         />
 
-        <View style={styles.checkboxContainer}>
+        {/* ================= TERMS ================= */}
+
+        <View
+          style={
+            styles.checkboxContainer
+          }
+        >
           <Checkbox
             value={acceptTerms}
-            onValueChange={setAcceptTerms}
-            color={acceptTerms ? Colors.rider : undefined}
+            onValueChange={
+              setAcceptTerms
+            }
+            color={
+              acceptTerms
+                ? Colors.rider
+                : undefined
+            }
           />
 
-          <Text style={styles.checkboxText}>
+          <Text
+            style={
+              styles.checkboxText
+            }
+          >
             I agree to the Terms & Conditions
           </Text>
         </View>
 
-        <View style={styles.buttonContainer}>
+        {/* ================= REGISTER BUTTON ================= */}
+
+        <View
+          style={
+            styles.buttonContainer
+          }
+        >
           <CustomButton
             title="Create Account"
             color={Colors.rider}
-            onPress={handleRegister}
+            onPress={
+              handleRegister
+            }
           />
         </View>
 
+        {/* ================= LOGIN ================= */}
+
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
+          <Text
+            style={
+              styles.footerText
+            }
+          >
             Already have an account?
           </Text>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate("RiderLogin")}
+            onPress={() =>
+              navigation.navigate(
+                "RiderLogin"
+              )
+            }
           >
-            <Text style={styles.loginText}>
+            <Text
+              style={
+                styles.loginText
+              }
+            >
               Sign In
             </Text>
           </TouchableOpacity>
@@ -145,11 +309,15 @@ export default function RiderRegisterScreen() {
   );
 }
 
+// ==================================================
+// STYLES
+// ==================================================
+
 const styles = StyleSheet.create({
   container: {
-    marginTop:30,
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor:
+      Colors.background,
   },
 
   scrollContainer: {
@@ -166,9 +334,10 @@ const styles = StyleSheet.create({
 
   checkboxText: {
     marginLeft: 10,
-    color: Colors.textSecondary,
-    fontSize: 14,
+    color:
+      Colors.textSecondary,
     flex: 1,
+    fontSize: 14,
   },
 
   buttonContainer: {
@@ -180,10 +349,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 30,
+    marginBottom: 20,
   },
 
   footerText: {
-    color: Colors.textSecondary,
+    color:
+      Colors.textSecondary,
     fontSize: 15,
   },
 

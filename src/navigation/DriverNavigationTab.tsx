@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import {
@@ -8,9 +9,6 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 
-
-// Driver Screens
-
 import DriverHomeScreen from "../screens/driver/driverHomeScreen";
 
 import ActiveTripScreen from "../screens/driver/activeTrip";
@@ -19,167 +17,139 @@ import ViewMyRideScreen from "../screens/driver/viewMyRide";
 
 import DriverProfileScreen from "../screens/driver/driverProfile";
 
-
-
 import Colors from "../constants/colors";
-
 
 
 const Tab = createBottomTabNavigator();
 
 
+export default function DriverNavigationTab() {
 
+  return (
 
-export default function DriverNavigationTab(){
+    <Tab.Navigator
 
+      screenOptions={({ route }) => ({
 
-return(
+        headerShown: false,
 
+        tabBarActiveTintColor:
+          Colors.driver,
 
-<Tab.Navigator
+        tabBarInactiveTintColor:
+          Colors.textSecondary,
 
+        tabBarStyle: {
 
-screenOptions={({route})=>({
+          height: 70,
 
+          paddingBottom: 8,
 
-headerShown:false,
+          paddingTop: 8,
 
+          backgroundColor:
+            Colors.white,
 
-tabBarActiveTintColor:Colors.driver,
+        },
 
+        tabBarLabelStyle: {
 
-tabBarInactiveTintColor:Colors.textSecondary,
+          fontSize: 12,
 
+          fontWeight: "600",
 
-tabBarStyle:{
+          textAlign: "center",
 
+        },
 
-height:65,
+        tabBarItemStyle: {
 
-paddingBottom:8,
+          justifyContent: "center",
 
-paddingTop:8,
+          alignItems: "center",
 
-backgroundColor:Colors.white,
+        },
 
+        tabBarIcon: ({ color, size }) => {
 
-},
+          let iconName:
+            keyof typeof Ionicons.glyphMap;
 
+          if (route.name === "Home") {
 
+            iconName = "home";
 
-tabBarIcon:({color,size})=>{
+          } else if (
+            route.name === "Activity"
+          ) {
 
+            iconName = "pulse";
 
-let iconName:keyof typeof Ionicons.glyphMap;
+          } else if (
+            route.name === "Past Trips"
+          ) {
 
+            iconName = "time";
 
+          } else {
 
-if(route.name==="Home"){
+            iconName = "person";
 
-iconName="home";
+          }
 
-}
+          return (
 
-else if(route.name==="Active Trip"){
+            <Ionicons
+              name={iconName}
+              size={size}
+              color={color}
+            />
 
-iconName="car";
+          );
 
-}
+        },
 
-else if(route.name==="My Ride"){
+      })}
 
-iconName="map";
+    >
 
-}
+      <Tab.Screen
 
-else{
+        name="Home"
 
-iconName="person";
+        component={DriverHomeScreen}
 
-}
+      />
 
 
+      <Tab.Screen
 
-return(
+        name="Activity"
 
-<Ionicons
+        component={ActiveTripScreen}
 
-name={iconName}
+      />
 
-size={size}
 
-color={color}
+      <Tab.Screen
 
-/>
+        name="Past Trips"
 
-);
+        component={ViewMyRideScreen}
 
+      />
 
-},
 
+      <Tab.Screen
 
+        name="Account"
 
-})}
+        component={DriverProfileScreen}
 
+      />
 
+    </Tab.Navigator>
 
->
-
-
-
-
-
-<Tab.Screen
-
-name="Home"
-
-component={DriverHomeScreen}
-
-/>
-
-
-
-
-
-<Tab.Screen
-
-name="Active Trip"
-
-component={ActiveTripScreen}
-
-/>
-
-
-
-
-
-<Tab.Screen
-
-name="My Ride"
-
-component={ViewMyRideScreen}
-
-/>
-
-
-
-
-<Tab.Screen
-
-name="Profile"
-
-component={DriverProfileScreen}
-
-/>
-
-
-
-
-
-</Tab.Navigator>
-
-
-);
-
+  );
 
 }

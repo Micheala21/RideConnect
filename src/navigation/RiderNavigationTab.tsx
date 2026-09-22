@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import {
@@ -8,212 +9,132 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 
-
 import Colors from "../constants/colors";
 
 
 // Rider Screens
 
-import RiderHomeScreen 
+import RiderHomeScreen
 from "../screens/rider/riderHomeScreen";
 
+import TrackDriverScreen
+from "../screens/rider/activeRide";
 
-import TrackDriverScreen 
-from "../screens/rider/trackDriverScreen";
+import TripReceiptScreen
+from "../screens/rider/tripHistoryScreen";
 
-
-import TripReceiptScreen 
-from "../screens/rider/tripReceiptScreen";
-
-
-import RiderProfileScreen 
+import RiderProfileScreen
 from "../screens/rider/riderProfileScreen";
-
 
 
 const Tab = createBottomTabNavigator();
 
 
+export default function RiderTabNavigator() {
 
-export default function RiderTabNavigator(){
+  return (
 
+    <Tab.Navigator
 
-return(
+      screenOptions={({ route }) => ({
 
+        headerShown: false,
 
-<Tab.Navigator
+        tabBarActiveTintColor: Colors.rider,
 
+        tabBarInactiveTintColor: "#94A3B8",
 
-screenOptions={({route})=>({
+        tabBarStyle: {
+          height: 70,
+          paddingBottom: 8,
+          paddingTop: 8,
+          backgroundColor: Colors.white,
+        },
 
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+          textAlign: "center",
+        },
 
-headerShown:false,
+        tabBarItemStyle: {
+          justifyContent: "center",
+          alignItems: "center",
+        },
 
+        tabBarIcon: ({ color, size }) => {
 
-tabBarActiveTintColor:Colors.rider,
+          let iconName: keyof typeof Ionicons.glyphMap;
 
 
-tabBarInactiveTintColor:"#94A3B8",
+          if (route.name === "Home") {
 
+            iconName = "home";
 
+          } else if (route.name === "Active Trip") {
 
-tabBarStyle:{
+            iconName = "navigate";
 
-height:70,
+          } else if (route.name === "Past Trips") {
 
-paddingBottom:10,
+            iconName = "time";
 
-paddingTop:10,
+          } else {
 
-backgroundColor:Colors.white,
+            iconName = "person";
 
-},
+          }
 
 
+          return (
 
+            <Ionicons
+              name={iconName}
+              size={size}
+              color={color}
+            />
 
-tabBarIcon:({color,size})=>{
+          );
 
+        },
 
-let iconName:keyof typeof Ionicons.glyphMap;
+      })}
 
+    >
 
+      {/* ================= HOME ================= */}
 
-switch(route.name){
+      <Tab.Screen
+        name="Home"
+        component={RiderHomeScreen}
+      />
 
 
+      {/* ================= ACTIVE TRIP ================= */}
 
-case "Home":
+      <Tab.Screen
+        name="Active Trip"
+        component={TrackDriverScreen}
+      />
 
-iconName="home";
 
-break;
+      {/* ================= PAST TRIPS ================= */}
 
+      <Tab.Screen
+        name="Past Trips"
+        component={TripReceiptScreen}
+      />
 
 
+      {/* ================= ACCOUNT ================= */}
 
-case "Track Driver":
+      <Tab.Screen
+        name="Account"
+        component={RiderProfileScreen}
+      />
 
-iconName="navigate";
+    </Tab.Navigator>
 
-break;
-
-
-
-
-
-case "Trips":
-
-iconName="receipt";
-
-break;
-
-
-
-
-
-case "Profile":
-
-iconName="person";
-
-break;
-
-
-
-
-
-default:
-
-iconName="home";
-
-}
-
-
-
-
-
-return(
-
-<Ionicons
-
-name={iconName}
-
-size={size}
-
-color={color}
-
-/>
-
-);
-
-
-}
-
-
-
-})}
-
-
-
-
->
-
-
-
-
-
-<Tab.Screen
-
-name="Home"
-
-component={RiderHomeScreen}
-
-/>
-
-
-
-
-
-<Tab.Screen
-
-name="Track Driver"
-
-component={TrackDriverScreen}
-
-/>
-
-
-
-
-
-<Tab.Screen
-
-name="Trips"
-
-component={TripReceiptScreen}
-
-/>
-
-
-
-
-
-<Tab.Screen
-
-name="Profile"
-
-component={RiderProfileScreen}
-
-/>
-
-
-
-
-
-</Tab.Navigator>
-
-
-);
-
+  );
 
 }

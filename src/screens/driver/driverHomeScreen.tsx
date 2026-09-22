@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useEffect, useState } from "react";
 
 import {
   SafeAreaView,
@@ -17,1120 +18,833 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Colors from "../../constants/colors";
 import { RootStackParamList } from "../../navigation/AppNavigator";
 
+import { supabase } from "../../lib/supabaseClient";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList
 >;
 
+type DriverUser = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  role: string;
+  licenceNumber?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  registrationNumber?: string;
+  availableSeats?: number;
+};
 
 export default function DriverHomeScreen() {
 
+  const navigation = useNavigation<NavigationProp>();
+
+  const [user, setUser] = useState<DriverUser | null>(null);
+
+  useEffect(() => {
+
+    const loadDriver = async () => {
+
+      try {
+
+        // Get the currently logged-in Supabase user
+        const {
+          data: {
+            user: authUser,
+          },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError) {
+          console.error(
+            "Error getting driver account:",
+            authError.message
+          );
+          return;
+        }
+
+        if (!authUser) {
+          console.error("No logged-in driver found.");
+          return;
+        }
+
+        // Get driver information from profiles
+        const {
+          data: profile,
+          error: profileError,
+        } = await supabase
+          .from("profiles")
+          .select(
+            "first_name, last_name, phone_number, role"
+          )
+          .eq("id", authUser.id)
+          .single();
 
-const navigation = useNavigation<NavigationProp>();
+        if (profileError) {
+          console.error(
+            "Error loading driver profile:",
+            profileError.message
+          );
+          return;
+        }
 
+        // Get driver-specific information
+        const {
+          data: driverProfile,
+          error: driverProfileError,
+        } = await supabase
+          .from("driver_profiles")
+          .select(
+            "licence_number, vehicle_make, vehicle_model, registration_number, available_seats"
+          )
+          .eq("id", authUser.id)
+          .single();
 
+        if (driverProfileError) {
+          console.error(
+            "Error loading driver information:",
+            driverProfileError.message
+          );
+          return;
+        }
 
-const driver = {
+        // Combine Supabase Auth + profiles + driver_profiles
+        setUser({
+          firstName: profile.first_name,
+          lastName: profile.last_name,
+          email: authUser.email || "",
+          phoneNumber: profile.phone_number,
+          role: profile.role,
+          licenceNumber: driverProfile.licence_number,
+          vehicleMake: driverProfile.vehicle_make,
+          vehicleModel: driverProfile.vehicle_model,
+          registrationNumber:
+            driverProfile.registration_number,
+          availableSeats:
+            driverProfile.available_seats,
+        });
 
-  name:"Alice Johnson",
+      } catch (error) {
 
-  vehicle:"Toyota Prius",
+        console.error(
+          "Error loading driver:",
+          error
+        );
 
-  registration:"CA 123-456",
+      }
 
-  seats:3,
+    };
 
-  rating:4.9,
+    loadDriver();
 
-  earningsToday:"R350",
+  }, []);
 
-  earningsWeek:"R2 150",
+  return (
 
-  completedTrips:18,
+    <SafeAreaView style={styles.container}>
 
-  passengers:42,
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
 
-  upcomingRide:"09:45 AM",
+        {/* Header */}
 
-};
+        <Text style={styles.heading}>
 
+          Good Morning, {user?.firstName || "Driver"} 👋
 
+        </Text>
 
+        <Text style={styles.subtitle}>
 
-return (
+          Ready to start driving today?
 
+        </Text>
 
-<SafeAreaView style={styles.container}>
 
+        {/* Driver Status */}
 
-<ScrollView
+        <View style={styles.statusCard}>
 
-showsVerticalScrollIndicator={false}
+          <View style={styles.statusLeft}>
 
-contentContainerStyle={styles.content}
+            <View style={styles.onlineDot} />
 
->
+            <View>
 
+              <Text style={styles.statusTitle}>
 
+                You're Online
 
-{/* Header */}
+              </Text>
 
+              <Text style={styles.statusSubtitle}>
 
-<Text style={styles.heading}>
+                Available to receive ride requests
 
-Good Morning, {driver.name} 👋
+              </Text>
 
-</Text>
+            </View>
 
+          </View>
 
-<Text style={styles.subtitle}>
+          <Ionicons
+            name="radio"
+            size={30}
+            color={Colors.driver}
+          />
 
-Ready to start driving today?
+        </View>
 
-</Text>
 
+        {/* Driver Information */}
 
+        <View style={styles.card}>
 
+          <Text style={styles.sectionTitle}>
 
+            Driver Information
 
-{/* Driver Status */}
+          </Text>
 
+          <View style={styles.infoRow}>
 
-<View style={styles.statusCard}>
+            <Ionicons
+              name="person"
+              size={22}
+              color={Colors.driver}
+            />
 
+            <View style={styles.infoDetails}>
 
-<View style={styles.statusLeft}>
+              <Text style={styles.infoLabel}>
 
+                Name
 
-<View style={styles.onlineDot}/>
+              </Text>
 
+              <Text style={styles.infoValue}>
 
-<View>
+                {user?.firstName} {user?.lastName}
 
+              </Text>
 
-<Text style={styles.statusTitle}>
+            </View>
 
-You're Online
+          </View>
 
-</Text>
+          <View style={styles.infoRow}>
 
+            <Ionicons
+              name="mail"
+              size={22}
+              color={Colors.driver}
+            />
 
-<Text style={styles.statusSubtitle}>
+            <View style={styles.infoDetails}>
 
-Available to receive ride requests
+              <Text style={styles.infoLabel}>
 
-</Text>
+                Email
 
+              </Text>
 
-</View>
+              <Text style={styles.infoValue}>
 
+                {user?.email}
 
-</View>
+              </Text>
 
+            </View>
 
+          </View>
 
-<Ionicons
+          <View style={styles.infoRow}>
 
-name="radio"
+            <Ionicons
+              name="call"
+              size={22}
+              color={Colors.driver}
+            />
 
-size={30}
+            <View style={styles.infoDetails}>
 
-color={Colors.driver}
+              <Text style={styles.infoLabel}>
 
-/>
+                Phone
 
+              </Text>
 
-</View>
+              <Text style={styles.infoValue}>
 
+                {user?.phoneNumber}
 
+              </Text>
 
+            </View>
 
+          </View>
 
+          <View style={styles.infoRow}>
 
+            <Ionicons
+              name="card"
+              size={22}
+              color={Colors.driver}
+            />
 
-{/* Vehicle Information */}
+            <View style={styles.infoDetails}>
 
+              <Text style={styles.infoLabel}>
 
+                Licence Number
 
-<View style={styles.card}>
+              </Text>
 
+              <Text style={styles.infoValue}>
 
-<Text style={styles.sectionTitle}>
+                {user?.licenceNumber || "Not provided"}
 
-Vehicle Information
+              </Text>
 
-</Text>
+            </View>
 
+          </View>
 
+        </View>
 
-<View style={styles.vehicleHeader}>
 
+        {/* Vehicle Information */}
 
-<Ionicons
+        <View style={styles.card}>
 
-name="car-sport"
+          <Text style={styles.sectionTitle}>
 
-size={40}
+            Vehicle Information
 
-color={Colors.driver}
+          </Text>
 
-/>
+          <View style={styles.vehicleHeader}>
 
+            <Ionicons
+              name="car-sport"
+              size={40}
+              color={Colors.driver}
+            />
 
+            <View style={{ marginLeft: 15 }}>
 
-<View style={{marginLeft:15}}>
+              <Text style={styles.vehicleName}>
 
+                {user?.vehicleMake || "Vehicle"}{" "}
+                {user?.vehicleModel || ""}
 
-<Text style={styles.vehicleName}>
+              </Text>
 
-{driver.vehicle}
+              <Text style={styles.vehicleText}>
 
-</Text>
+                Registration:{" "}
+                {user?.registrationNumber || "Not provided"}
 
+              </Text>
 
+              <Text style={styles.vehicleText}>
 
-<Text style={styles.vehicleText}>
+                Seats Available:{" "}
+                {user?.availableSeats ?? "Not provided"}
 
-Registration: {driver.registration}
+              </Text>
 
-</Text>
+            </View>
 
+          </View>
 
+        </View>
 
-<Text style={styles.vehicleText}>
 
-Seats Available: {driver.seats}
+        {/* Today's Ride */}
 
-</Text>
+        <View style={styles.card}>
 
+          <Text style={styles.sectionTitle}>
 
+            Today's Ride
 
-<Text style={styles.vehicleText}>
+          </Text>
 
-⭐ {driver.rating}
+          <Text style={styles.emptyText}>
 
-</Text>
+            No ride scheduled yet.
 
+          </Text>
 
-</View>
+        </View>
 
 
-</View>
+        {/* Earnings */}
 
+        <View style={styles.card}>
 
-</View>
+          <Text style={styles.sectionTitle}>
 
+            Earnings
 
+          </Text>
 
+          <View style={styles.earningRow}>
 
+            <Ionicons
+              name="wallet"
+              size={40}
+              color={Colors.driver}
+            />
 
+            <View style={{ marginLeft: 15 }}>
 
+              <Text style={styles.earningAmount}>
 
-{/* Today's Ride */}
+                R0
 
+              </Text>
 
-<View style={styles.card}>
+              <Text style={styles.vehicleText}>
 
+                Today's Earnings
 
-<Text style={styles.sectionTitle}>
+              </Text>
 
-Today's Ride
+            </View>
 
-</Text>
+          </View>
 
+          <View style={styles.divider} />
 
+          <View style={styles.statsRow}>
 
+            <View>
 
-<View style={styles.locationRow}>
+              <Text style={styles.smallHeading}>
 
+                Trips
 
-<Ionicons
+              </Text>
 
-name="location"
+              <Text style={styles.smallValue}>
 
-size={22}
+                0
 
-color={Colors.driver}
+              </Text>
 
-/>
+            </View>
 
+            <View>
 
-<Text style={styles.locationText}>
+              <Text style={styles.smallHeading}>
 
-CPUT Bellville Campus
+                Weekly
 
-</Text>
+              </Text>
 
+              <Text style={styles.smallValue}>
 
-</View>
+                R0
 
+              </Text>
 
+            </View>
 
+          </View>
 
+        </View>
 
-<Ionicons
 
-name="arrow-down"
+        {/* Quick Statistics */}
 
-size={22}
+        <Text style={styles.sectionTitle}>
 
-color={Colors.textSecondary}
+          Quick Statistics
 
-style={{marginVertical:10}}
+        </Text>
 
-/>
+        <View style={styles.quickStats}>
 
+          <View style={styles.statCard}>
 
+            <Ionicons
+              name="star"
+              size={28}
+              color="#F59E0B"
+            />
 
+            <Text style={styles.statValue}>
 
-<View style={styles.locationRow}>
+              -
 
+            </Text>
 
-<Ionicons
+            <Text style={styles.statLabel}>
 
-name="flag"
+              Rating
 
-size={22}
+            </Text>
 
-color={Colors.driver}
+          </View>
 
-/>
+          <View style={styles.statCard}>
 
+            <Ionicons
+              name="car"
+              size={28}
+              color={Colors.driver}
+            />
 
+            <Text style={styles.statValue}>
 
-<Text style={styles.locationText}>
+              0
 
-Cape Town CBD
+            </Text>
 
-</Text>
+            <Text style={styles.statLabel}>
 
+              Trips
 
-</View>
+            </Text>
 
+          </View>
 
+          <View style={styles.statCard}>
 
+            <Ionicons
+              name="people"
+              size={28}
+              color={Colors.driver}
+            />
 
+            <Text style={styles.statValue}>
 
-<View style={styles.tripInfo}>
+              0
 
+            </Text>
 
-<Text style={styles.infoText}>
+            <Text style={styles.statLabel}>
 
-🕘 08:30 AM
+              Riders
 
-</Text>
+            </Text>
 
+          </View>
 
-<Text style={styles.infoText}>
+        </View>
 
-👥 3 Riders
 
-</Text>
+        {/* Upcoming Ride */}
 
+        <View style={styles.card}>
 
-<Text style={styles.infoText}>
+          <Text style={styles.sectionTitle}>
 
-💰 R120
+            Upcoming Ride
 
-</Text>
+          </Text>
 
+          <Text style={styles.emptyText}>
 
-</View>
+            No upcoming rides.
 
+          </Text>
 
+        </View>
 
-</View>
 
-{/* Earnings */}
+        {/* Buttons */}
 
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() =>
+            navigation.navigate("RiderRequests")
+          }
+        >
 
-<View style={styles.card}>
+          <Ionicons
+            name="people"
+            size={22}
+            color={Colors.white}
+          />
 
+          <Text style={styles.buttonText}>
 
-<Text style={styles.sectionTitle}>
+            View Rider Requests
 
-Earnings
+          </Text>
 
-</Text>
+        </TouchableOpacity>
 
 
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() =>
+            navigation.navigate("CreateRideOffer")
+          }
+        >
 
+          <Ionicons
+            name="add-circle"
+            size={22}
+            color={Colors.driver}
+          />
 
-<View style={styles.earningRow}>
+          <Text style={styles.secondaryButtonText}>
 
+            Create Ride Offer
 
-<Ionicons
+          </Text>
 
-name="wallet"
+        </TouchableOpacity>
 
-size={40}
+      </ScrollView>
 
-color={Colors.driver}
+    </SafeAreaView>
 
-/>
+  );
 
-
-
-<View style={{marginLeft:15}}>
-
-
-<Text style={styles.earningAmount}>
-
-{driver.earningsToday}
-
-</Text>
-
-
-
-<Text style={styles.vehicleText}>
-
-Today's Earnings
-
-</Text>
-
-
-</View>
-
-
-</View>
-
-
-
-
-<View style={styles.divider}/>
-
-
-
-
-
-<View style={styles.statsRow}>
-
-
-<View>
-
-
-<Text style={styles.smallHeading}>
-
-Trips
-
-</Text>
-
-
-<Text style={styles.smallValue}>
-
-{driver.completedTrips}
-
-</Text>
-
-
-</View>
-
-
-
-
-
-<View>
-
-
-<Text style={styles.smallHeading}>
-
-Weekly
-
-</Text>
-
-
-<Text style={styles.smallValue}>
-
-{driver.earningsWeek}
-
-</Text>
-
-
-</View>
-
-
-
-</View>
-
-
-
-</View>
-
-
-
-
-
-
-
-
-{/* Quick Statistics */}
-
-
-
-<Text style={styles.sectionTitle}>
-
-Quick Statistics
-
-</Text>
-
-
-
-
-
-<View style={styles.quickStats}>
-
-
-<View style={styles.statCard}>
-
-
-<Ionicons
-
-name="star"
-
-size={28}
-
-color="#F59E0B"
-
-/>
-
-
-
-<Text style={styles.statValue}>
-
-{driver.rating}
-
-</Text>
-
-
-
-<Text style={styles.statLabel}>
-
-Rating
-
-</Text>
-
-
-
-</View>
-
-
-
-
-
-
-<View style={styles.statCard}>
-
-
-<Ionicons
-
-name="car"
-
-size={28}
-
-color={Colors.driver}
-
-/>
-
-
-
-<Text style={styles.statValue}>
-
-{driver.completedTrips}
-
-</Text>
-
-
-
-<Text style={styles.statLabel}>
-
-Trips
-
-</Text>
-
-
-
-</View>
-
-
-
-
-
-
-
-<View style={styles.statCard}>
-
-
-<Ionicons
-
-name="people"
-
-size={28}
-
-color={Colors.driver}
-
-/>
-
-
-
-<Text style={styles.statValue}>
-
-{driver.passengers}
-
-</Text>
-
-
-
-<Text style={styles.statLabel}>
-
-Riders
-
-</Text>
-
-
-
-</View>
-
-
-
-</View>
-
-
-
-
-
-
-
-
-{/* Upcoming Ride */}
-
-
-
-<View style={styles.card}>
-
-
-<Text style={styles.sectionTitle}>
-
-Upcoming Ride
-
-</Text>
-
-
-
-
-<Text style={styles.upcomingTime}>
-
-{driver.upcomingRide}
-
-</Text>
-
-
-
-
-<Text style={styles.vehicleText}>
-
-Bellville
-
-</Text>
-
-
-
-
-<Ionicons
-
-name="arrow-down"
-
-size={20}
-
-color={Colors.textSecondary}
-
-/>
-
-
-
-
-
-<Text style={styles.vehicleText}>
-
-Cape Town CBD
-
-</Text>
-
-
-
-</View>
-
-
-
-
-
-
-
-
-
-{/* Buttons */}
-
-
-
-<TouchableOpacity
-
-style={styles.primaryButton}
-
-onPress={() => 
-  navigation.navigate("RiderRequests")
 }
 
->
-
-
-<Ionicons
-
-name="people"
-
-size={22}
-
-color={Colors.white}
-
-/>
-
-
-
-<Text style={styles.buttonText}>
-
-View Rider Requests
-
-</Text>
-
-
-</TouchableOpacity>
-
-
-
-
-
-
-
-<TouchableOpacity
-
-style={styles.secondaryButton}
-
-onPress={() => navigation.navigate("CreateRideOffer")}
-
->
-
-
-<Ionicons
-
-name="add-circle"
-
-size={22}
-
-color={Colors.driver}
-
-/>
-
-
-
-<Text style={styles.secondaryButtonText}>
-
-Create Ride Offer
-
-</Text>
-
-
-
-</TouchableOpacity>
-
-
-
-
-
-</ScrollView>
-
-
-</SafeAreaView>
-
-
-);
-
-}
 const styles = StyleSheet.create({
 
-container:{
-  flex:1,
-  backgroundColor:Colors.background,
-},
-
-
-content:{
-  padding:22,
-  paddingBottom:40,
-},
-
-
-
-heading:{
-  fontSize:28,
-  fontWeight:"700",
-  color:Colors.primary,
-  marginTop:10,
-},
-
-
-
-subtitle:{
-  color:Colors.textSecondary,
-  marginTop:5,
-  marginBottom:25,
-  fontSize:15,
-},
-
-
-
-
-/* ---------- Status ---------- */
-
-
-statusCard:{
-
-  backgroundColor:Colors.white,
-  borderRadius:18,
-  padding:18,
-  marginBottom:22,
-  flexDirection:"row",
-  justifyContent:"space-between",
-  alignItems:"center",
-  elevation:4,
-
-},
-
-
-
-statusLeft:{
-
-  flexDirection:"row",
-  alignItems:"center",
-
-},
-
-
-
-onlineDot:{
-
-  width:14,
-  height:14,
-  borderRadius:7,
-  backgroundColor:Colors.success,
-  marginRight:15,
-
-},
-
-
-
-statusTitle:{
-
-  fontSize:18,
-  fontWeight:"700",
-  color:Colors.primary,
-
-},
-
-
-
-statusSubtitle:{
-
-  marginTop:4,
-  color:Colors.textSecondary,
-  fontSize:14,
-
-},
-
-
-
-
-/* ---------- Cards ---------- */
-
-
-card:{
-
-  backgroundColor:Colors.white,
-  borderRadius:18,
-  padding:20,
-  marginBottom:22,
-  elevation:4,
-
-},
-
-
-
-sectionTitle:{
-
-  fontSize:20,
-  fontWeight:"700",
-  color:Colors.primary,
-  marginBottom:16,
-
-},
-
-
-
-
-/* ---------- Vehicle ---------- */
-
-
-vehicleHeader:{
-
-  flexDirection:"row",
-  alignItems:"center",
-
-},
-
-
-
-vehicleName:{
-
-  fontSize:20,
-  fontWeight:"700",
-  color:Colors.primary,
-
-},
-
-
-
-vehicleText:{
-
-  marginTop:5,
-  color:Colors.textSecondary,
-  fontSize:15,
-
-},
-
-
-
-
-/* ---------- Ride ---------- */
-
-
-locationRow:{
-
-  flexDirection:"row",
-  alignItems:"center",
-
-},
-
-
-
-locationText:{
-
-  marginLeft:12,
-  color:Colors.primary,
-  fontWeight:"600",
-  fontSize:16,
-
-},
-
-
-
-tripInfo:{
-
-  flexDirection:"row",
-  justifyContent:"space-between",
-  marginTop:20,
-
-},
-
-
-
-infoText:{
-
-  color:Colors.textSecondary,
-  fontSize:15,
-  fontWeight:"600",
-
-},
-
-
-
-
-
-/* ---------- Earnings ---------- */
-
-
-earningRow:{
-
-  flexDirection:"row",
-  alignItems:"center",
-
-},
-
-
-
-earningAmount:{
-
-  fontSize:28,
-  fontWeight:"700",
-  color:Colors.driver,
-
-},
-
-
-
-divider:{
-
-  height:1,
-  backgroundColor:"#E5E7EB",
-  marginVertical:18,
-
-},
-
-
-
-statsRow:{
-
-  flexDirection:"row",
-  justifyContent:"space-between",
-
-},
-
-
-
-smallHeading:{
-
-  color:Colors.textSecondary,
-  fontSize:14,
-
-},
-
-
-
-smallValue:{
-
-  marginTop:6,
-  fontSize:20,
-  fontWeight:"700",
-  color:Colors.primary,
-
-},
-
-
-
-
-
-/* ---------- Quick Stats ---------- */
-
-
-quickStats:{
-
-  flexDirection:"row",
-  justifyContent:"space-between",
-  marginBottom:25,
-
-},
-
-
-
-statCard:{
-
-  backgroundColor:Colors.white,
-  width:"31%",
-  borderRadius:16,
-  paddingVertical:18,
-  alignItems:"center",
-  elevation:4,
-
-},
-
-
-
-statValue:{
-
-  fontSize:22,
-  fontWeight:"700",
-  color:Colors.primary,
-  marginTop:10,
-
-},
-
-
-
-statLabel:{
-
-  color:Colors.textSecondary,
-  marginTop:6,
-  fontSize:14,
-
-},
-
-
-
-
-
-/* ---------- Upcoming Ride ---------- */
-
-
-upcomingTime:{
-
-  fontSize:24,
-  fontWeight:"700",
-  color:Colors.driver,
-  marginBottom:10,
-
-},
-
-
-
-
-
-/* ---------- Buttons ---------- */
-
-
-primaryButton:{
-
-  height:58,
-  backgroundColor:Colors.driver,
-  borderRadius:15,
-  justifyContent:"center",
-  alignItems:"center",
-  flexDirection:"row",
-  marginBottom:15,
-
-},
-
-
-
-buttonText:{
-
-  color:Colors.white,
-  fontSize:18,
-  fontWeight:"700",
-  marginLeft:10,
-
-},
-
-
-
-secondaryButton:{
-
-  height:58,
-  borderWidth:2,
-  borderColor:Colors.driver,
-  borderRadius:15,
-  justifyContent:"center",
-  alignItems:"center",
-  flexDirection:"row",
-  marginBottom:20,
-
-},
-
-
-
-secondaryButtonText:{
-
-  color:Colors.driver,
-  fontSize:18,
-  fontWeight:"700",
-  marginLeft:10,
-
-},
-
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+
+  content: {
+    padding: 22,
+    paddingBottom: 40,
+  },
+
+  heading: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginTop: 10,
+  },
+
+  subtitle: {
+    color: Colors.textSecondary,
+    marginTop: 5,
+    marginBottom: 25,
+    fontSize: 15,
+  },
+
+  /* ---------- Status ---------- */
+
+  statusCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 22,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    elevation: 4,
+  },
+
+  statusLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  onlineDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: Colors.success,
+    marginRight: 15,
+  },
+
+  statusTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+
+  statusSubtitle: {
+    marginTop: 4,
+    color: Colors.textSecondary,
+    fontSize: 14,
+  },
+
+  /* ---------- Cards ---------- */
+
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 22,
+    elevation: 4,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 16,
+  },
+
+  /* ---------- Driver Information ---------- */
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  infoDetails: {
+    marginLeft: 12,
+    flex: 1,
+  },
+
+  infoLabel: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+  },
+
+  infoValue: {
+    marginTop: 3,
+    color: Colors.primary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  /* ---------- Vehicle ---------- */
+
+  vehicleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  vehicleName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+
+  vehicleText: {
+    marginTop: 5,
+    color: Colors.textSecondary,
+    fontSize: 15,
+  },
+
+  /* ---------- Empty Information ---------- */
+
+  emptyText: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+  },
+
+  /* ---------- Earnings ---------- */
+
+  earningRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  earningAmount: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: Colors.driver,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+    marginVertical: 18,
+  },
+
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  smallHeading: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+  },
+
+  smallValue: {
+    marginTop: 6,
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+
+  /* ---------- Quick Stats ---------- */
+
+  quickStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 25,
+  },
+
+  statCard: {
+    backgroundColor: Colors.white,
+    width: "31%",
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: "center",
+    elevation: 4,
+  },
+
+  statValue: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginTop: 10,
+  },
+
+  statLabel: {
+    color: Colors.textSecondary,
+    marginTop: 6,
+    fontSize: 14,
+  },
+
+  /* ---------- Buttons ---------- */
+
+  primaryButton: {
+    height: 58,
+    backgroundColor: Colors.driver,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    marginBottom: 15,
+  },
+
+  buttonText: {
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
+
+  secondaryButton: {
+    height: 58,
+    borderWidth: 2,
+    borderColor: Colors.driver,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    marginBottom: 20,
+  },
+
+  secondaryButtonText: {
+    color: Colors.driver,
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
 
 });

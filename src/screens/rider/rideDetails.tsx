@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   SafeAreaView,
@@ -40,27 +41,73 @@ export default function RideDetailsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {/* Driver Avatar */}
+        {/* Back Button */}
 
-        <Image
-          source={{ uri: driver.avatar }}
-          style={styles.avatar}
-        />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={26}
+            color={Colors.primary}
+          />
+        </TouchableOpacity>
 
-        <Text style={styles.name}>
-          {driver.name}
-        </Text>
+        {/* Driver Header */}
 
-        <Text style={styles.rating}>
-          ⭐ {driver.rating} • Verified Driver
-        </Text>
+        <View style={styles.driverHeader}>
+          <Image
+            source={{ uri: driver.avatar }}
+            style={styles.avatar}
+          />
+
+          <Text style={styles.name}>
+            {driver.name}
+          </Text>
+
+          <View style={styles.ratingContainer}>
+            <Ionicons
+              name="star"
+              size={18}
+              color={Colors.rider}
+            />
+
+            <Text style={styles.rating}>
+              {driver.rating}
+            </Text>
+
+            <View style={styles.dot} />
+
+            <Ionicons
+              name="shield-checkmark"
+              size={17}
+              color={Colors.rider}
+            />
+
+            <Text style={styles.verified}>
+              Verified Driver
+            </Text>
+          </View>
+        </View>
 
         {/* Driver Information */}
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            Driver Information
-          </Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.sectionIcon}>
+              <Ionicons
+                name="person-outline"
+                size={20}
+                color={Colors.rider}
+              />
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              Driver Information
+            </Text>
+          </View>
 
           <DetailRow
             icon="car-outline"
@@ -84,15 +131,26 @@ export default function RideDetailsScreen() {
             icon="people-outline"
             title="Seats Available"
             value={driver.seats.toString()}
+            last
           />
         </View>
 
         {/* Trip Information */}
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            Trip Information
-          </Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.sectionIcon}>
+              <Ionicons
+                name="navigate-outline"
+                size={20}
+                color={Colors.rider}
+              />
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              Trip Information
+            </Text>
+          </View>
 
           <DetailRow
             icon="location-outline"
@@ -116,15 +174,27 @@ export default function RideDetailsScreen() {
             icon="cash-outline"
             title="Price"
             value={driver.price}
+            highlight
+            last
           />
         </View>
 
         {/* Ride Information */}
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            Ride Information
-          </Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.sectionIcon}>
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={Colors.rider}
+              />
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              Ride Information
+            </Text>
+          </View>
 
           <DetailRow
             icon="speedometer-outline"
@@ -148,25 +218,34 @@ export default function RideDetailsScreen() {
             icon="shield-checkmark-outline"
             title="Verification"
             value="Verified"
+            highlight
+            last
           />
         </View>
 
-       {/* Continue to Payment Button */}
+        {/* Continue to Payment */}
 
-<TouchableOpacity
-  style={styles.bookButton}
-  onPress={() => navigation.navigate("PaymentMethod")}
->
-  <Ionicons
-    name="card-outline"
-    size={22}
-    color={Colors.white}
-  />
+        <TouchableOpacity
+          style={styles.bookButton}
+          onPress={() => navigation.navigate("PaymentMethod")}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="card-outline"
+            size={22}
+            color={Colors.white}
+          />
 
-  <Text style={styles.bookText}>
-    Continue to Payment
-  </Text>
-</TouchableOpacity>
+          <Text style={styles.bookText}>
+            Continue to Payment
+          </Text>
+
+          <Ionicons
+            name="arrow-forward"
+            size={20}
+            color={Colors.white}
+          />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -176,28 +255,44 @@ interface DetailProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   value: string;
+  last?: boolean;
+  highlight?: boolean;
 }
 
 function DetailRow({
   icon,
   title,
   value,
+  last = false,
+  highlight = false,
 }: DetailProps) {
   return (
-    <View style={styles.row}>
+    <View
+      style={[
+        styles.row,
+        !last && styles.rowBorder,
+      ]}
+    >
       <View style={styles.left}>
-        <Ionicons
-          name={icon}
-          size={22}
-          color={Colors.rider}
-        />
+        <View style={styles.detailIcon}>
+          <Ionicons
+            name={icon}
+            size={18}
+            color={Colors.rider}
+          />
+        </View>
 
         <Text style={styles.label}>
           {title}
         </Text>
       </View>
 
-      <Text style={styles.value}>
+      <Text
+        style={[
+          styles.value,
+          highlight && styles.highlightValue,
+        ]}
+      >
         {value}
       </Text>
     </View>
@@ -211,18 +306,33 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 35,
+  },
+
+  backButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 23,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+    elevation: 3,
+  },
+
+  driverHeader: {
+    alignItems: "center",
+    marginBottom: 25,
   },
 
   avatar: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    alignSelf: "center",
-    marginTop: 20,
-    marginBottom: 20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: Colors.secondary,
+    marginBottom: 15,
   },
 
   name: {
@@ -232,34 +342,80 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+
   rating: {
-    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.primary,
+    marginLeft: 5,
+  },
+
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.textSecondary,
+    marginHorizontal: 9,
+  },
+
+  verified: {
+    fontSize: 14,
     color: Colors.textSecondary,
-    marginTop: 6,
-    marginBottom: 25,
-    fontSize: 16,
+    marginLeft: 5,
   },
 
   card: {
     backgroundColor: Colors.white,
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 20,
-    elevation: 4,
+    borderRadius: 20,
+    paddingHorizontal: 17,
+    paddingTop: 17,
+    paddingBottom: 5,
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: Colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+
+  sectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#EEF5FB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
   },
 
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: "700",
     color: Colors.primary,
-    marginBottom: 15,
   },
 
   row: {
+    minHeight: 58,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 14,
+  },
+
+  rowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: "#ECECEC",
   },
@@ -267,36 +423,57 @@ const styles = StyleSheet.create({
   left: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
+  },
+
+  detailIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F5F8FB",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   label: {
-    marginLeft: 12,
+    marginLeft: 10,
     color: Colors.primary,
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: "500",
   },
 
   value: {
     color: Colors.textSecondary,
+    fontSize: 14,
     fontWeight: "600",
-    maxWidth: "45%",
+    maxWidth: "48%",
     textAlign: "right",
+    marginLeft: 10,
+  },
+
+  highlightValue: {
+    color: Colors.rider,
+    fontWeight: "700",
   },
 
   bookButton: {
-    height: 58,
+    minHeight: 58,
     backgroundColor: Colors.rider,
-    borderRadius: 15,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 5,
+    marginBottom: 10,
+    paddingHorizontal: 18,
+    elevation: 3,
   },
 
   bookText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
-    marginLeft: 8,
+    marginLeft: 9,
+    marginRight: 10,
   },
 });

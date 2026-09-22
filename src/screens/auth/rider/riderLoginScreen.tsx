@@ -1,53 +1,203 @@
 import React, { useState } from "react";
+
 import {
+  Alert,
   SafeAreaView,
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
 } from "react-native";
+
 import Checkbox from "expo-checkbox";
 import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
+
+import {
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
 
 import Colors from "../../../constants/colors";
-import { RootStackParamList } from "../../../navigation/AppNavigator";
+
+import {
+  RootStackParamList,
+} from "../../../navigation/AppNavigator";
 
 import ScreenHeader from "../../../components/ScreenHeader";
 import CustomInput from "../../../components/CustomInput";
 import PasswordInput from "../../../components/PasswordInput";
 import CustomButton from "../../../components/CustomButton";
 
-type NavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "RiderLogin"
->;
+import { supabase } from "../../../lib/supabaseClient";
+
+type NavigationProp =
+  NativeStackNavigationProp<
+    RootStackParamList,
+    "RiderLogin"
+  >;
 
 export default function RiderLoginScreen() {
-  const navigation = useNavigation<NavigationProp>();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const navigation =
+    useNavigation<NavigationProp>();
 
-  const handleLogin = () => {
-    console.log("Email:", email);
-    console.log("Password:", password);
-    console.log("Remember Me:", rememberMe);
+  const [email, setEmail] =
+    useState("");
 
-    navigation.navigate("RiderHome");
+  const [password, setPassword] =
+    useState("");
+
+  const [rememberMe, setRememberMe] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
+
+
+  // ==================================================
+  // LOGIN
+  // ==================================================
+
+  const handleLogin = async () => {
+
+    if (!email || !password) {
+      Alert.alert(
+        "Missing Information",
+        "Please enter your email and password."
+      );
+      return;
+    }
+
+    try {
+
+      setLoading(true);
+
+      // ================= SUPABASE LOGIN =================
+
+      const {
+        data,
+        error,
+      } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password,
+        });
+
+      if (error) {
+
+        console.error(
+          "Supabase login error:",
+          error.message
+        );
+
+        Alert.alert(
+          "Login Failed",
+          error.message
+        );
+
+        return;
+      }
+
+      if (!data.user) {
+
+        Alert.alert(
+          "Login Failed",
+          "Unable to retrieve your account."
+        );
+
+        return;
+      }
+
+      console.log(
+        "Rider logged in successfully:",
+        data.user.id
+      );
+
+      // ================= NAVIGATION =================
+
+      navigation.navigate(
+        "RiderHome"
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Rider Login error:",
+        error
+      );
+
+      Alert.alert(
+        "Login Error",
+        "Something went wrong. Please try again."
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
   };
+
+
+  // ==================================================
+  // REGISTER
+  // ==================================================
 
   const handleRegister = () => {
-    navigation.navigate("RiderRegister");
+
+    navigation.navigate(
+      "RiderRegister"
+    );
+
   };
+
+
+  // ==================================================
+  // FORGOT PASSWORD
+  // ==================================================
 
   const handleForgotPassword = () => {
-    console.log("Forgot Password");
+
+    navigation.navigate(
+      "ForgotPassword",
+      {
+        role: "rider",
+      }
+    );
+
   };
 
+
+  // ==================================================
+  // UI
+  // ==================================================
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
+
+      {/* ================= BACK BUTTON ================= */}
+
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() =>
+          navigation.navigate("RoleSelection")
+        }
+        activeOpacity={0.7}
+      >
+
+        <Ionicons
+          name="arrow-back"
+          size={24}
+          color={Colors.primary}
+        />
+
+      </TouchableOpacity>
+
+
+      {/* ================= HEADER ================= */}
+
       <ScreenHeader
         title="Rider Login"
         subtitle="Welcome back! Sign in to continue."
@@ -55,7 +205,13 @@ export default function RiderLoginScreen() {
         icon="person"
       />
 
+
+      {/* ================= FORM ================= */}
+
       <View style={styles.form}>
+
+        {/* ================= EMAIL ================= */}
+
         <CustomInput
           label="Email Address"
           placeholder="Enter your email"
@@ -64,105 +220,202 @@ export default function RiderLoginScreen() {
           keyboardType="email-address"
         />
 
+
+        {/* ================= PASSWORD ================= */}
+
         <PasswordInput
           label="Password"
           value={password}
           onChangeText={setPassword}
         />
 
-        <View style={styles.options}>
-          <View style={styles.checkboxRow}>
+
+        {/* ================= OPTIONS ================= */}
+
+        <View
+          style={styles.options}
+        >
+
+          {/* Remember Me */}
+
+          <View
+            style={styles.checkboxRow}
+          >
+
             <Checkbox
               value={rememberMe}
-              onValueChange={setRememberMe}
-              color={rememberMe ? Colors.rider : undefined}
+              onValueChange={
+                setRememberMe
+              }
+              color={
+                rememberMe
+                  ? Colors.rider
+                  : undefined
+              }
             />
 
-            <Text style={styles.optionText}>
+            <Text
+              style={
+                styles.optionText
+              }
+            >
               Remember Me
             </Text>
+
           </View>
 
-          <TouchableOpacity onPress={handleForgotPassword}>
-            <Text style={styles.forgotText}>
+
+          {/* Forgot Password */}
+
+          <TouchableOpacity
+            onPress={
+              handleForgotPassword
+            }
+          >
+
+            <Text
+              style={
+                styles.forgotText
+              }
+            >
               Forgot Password?
             </Text>
+
           </TouchableOpacity>
+
         </View>
 
-        <View style={styles.buttonContainer}>
+
+        {/* ================= SIGN IN BUTTON ================= */}
+
+        <View
+          style={
+            styles.buttonContainer
+          }
+        >
+
           <CustomButton
-            title="Sign In"
+            title={
+              loading
+                ? "Signing In..."
+                : "Sign In"
+            }
             color={Colors.rider}
             onPress={handleLogin}
           />
+
         </View>
+
       </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
+
+      {/* ================= REGISTER ================= */}
+
+      <View
+        style={styles.footer}
+      >
+
+        <Text
+          style={
+            styles.footerText
+          }
+        >
           Don't have an account?
         </Text>
 
-        <TouchableOpacity onPress={handleRegister}>
-          <Text style={styles.registerText}>
+
+        <TouchableOpacity
+          onPress={
+            handleRegister
+          }
+        >
+
+          <Text
+            style={
+              styles.registerText
+            }
+          >
             Register
           </Text>
+
         </TouchableOpacity>
+
       </View>
+
     </SafeAreaView>
   );
 }
 
+
+// ==================================================
+// STYLES
+// ==================================================
+
 const styles = StyleSheet.create({
- container: {
-    width: "92%",
-    alignSelf: "center",
-    marginTop: 70,
+
+  container: {
+    flex: 1,
+    backgroundColor:
+      Colors.background,
+    paddingHorizontal: 15,
+    justifyContent:
+      "space-evenly",
   },
 
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: Colors.primary,
-  },
 
-  input: {
-    width: "100%",
-    height: 58,
+  /* Back Button */
+
+  backButton: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    width: 45,
+    height: 45,
+    borderRadius: 23,
     backgroundColor: Colors.white,
-    borderRadius: 15,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    fontSize: 15,
-    color: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    zIndex: 10,
   },
+
+
   form: {
-    marginTop: 10,
     width: "100%",
+    marginTop: 10,
   },
+
 
   options: {
     width: "92%",
     alignSelf: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     marginTop: 20,
   },
+
 
   checkboxRow: {
     flexDirection: "row",
     alignItems: "center",
   },
 
+
   optionText: {
     marginLeft: 8,
     fontSize: 14,
-    color: Colors.textSecondary,
+    color:
+      Colors.textSecondary,
   },
+
 
   forgotText: {
     color: Colors.rider,
@@ -170,23 +423,28 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
+
   buttonContainer: {
     width: "92%",
     alignSelf: "center",
     marginTop: 35,
   },
 
+
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 30,
+    marginBottom: 20,
   },
+
 
   footerText: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color:
+      Colors.textSecondary,
   },
+
 
   registerText: {
     marginLeft: 6,
@@ -194,4 +452,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.rider,
   },
+
 });

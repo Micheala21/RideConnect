@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import {
@@ -11,20 +12,13 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import {
-  useNavigation,
-} from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 
-import {
-  NativeStackNavigationProp,
-} from "@react-navigation/native-stack";
-
-import {
-  RootStackParamList,
-} from "../../navigation/AppNavigator";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import Colors from "../../constants/colors";
 
+import { RootStackParamList } from "../../navigation/AppNavigator";
 
 
 type NavigationProp = NativeStackNavigationProp<
@@ -33,730 +27,278 @@ type NavigationProp = NativeStackNavigationProp<
 >;
 
 
-
 export default function ViewMyRideScreen() {
-
 
   const navigation = useNavigation<NavigationProp>();
 
-
-
-  const ride = {
-
-    rider: "Sarah Williams",
-
-    pickup: "CPUT Bellville Campus",
-
-    destination: "Cape Town CBD",
-
-    pickupTime: "08:30 AM",
-
-    passengers: "2",
-
-    earnings: "R120",
-
-    status: "Confirmed",
-
-  };
-
-
-
   return (
 
-
     <SafeAreaView style={styles.container}>
-
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
 
+        {/* ================= BACK BUTTON ================= */}
+
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.navigate("DriverHome")}
+          activeOpacity={0.7}
+        >
+
+          <Ionicons
+            name="arrow-back"
+            size={26}
+            color={Colors.primary}
+          />
+
+        </TouchableOpacity>
 
 
-        {/* Header */}
-
+        {/* ================= HEADER ================= */}
 
         <View style={styles.header}>
 
+          <View style={styles.headerIcon}>
 
-          <Ionicons
+            <Ionicons
+              name="time-outline"
+              size={38}
+              color={Colors.driver}
+            />
 
-            name="car-sport"
-
-            size={55}
-
-            color={Colors.driver}
-
-          />
-
+          </View>
 
           <Text style={styles.heading}>
-            My Ride
+            Past Trips
           </Text>
-
 
           <Text style={styles.subtitle}>
-            Current ride details
+            View your completed rides and trip history.
           </Text>
-
 
         </View>
 
 
+        {/* ================= EMPTY STATE ================= */}
 
+        <View style={styles.emptyCard}>
 
+          <View style={styles.emptyIcon}>
 
-
-        {/* Status Card */}
-
-
-        <View style={styles.statusCard}>
-
-
-          <Ionicons
-
-            name="checkmark-circle"
-
-            size={30}
-
-            color={Colors.success}
-
-          />
-
-
-          <View>
-
-            <Text style={styles.statusTitle}>
-              Ride Status
-            </Text>
-
-
-            <Text style={styles.status}>
-              {ride.status}
-            </Text>
-
+            <Ionicons
+              name="car-outline"
+              size={42}
+              color={Colors.driver}
+            />
 
           </View>
 
 
-        </View>
-
-
-
-
-
-
-
-        {/* Ride Details */}
-
-
-        <View style={styles.card}>
-
-
-          <Text style={styles.sectionTitle}>
-            Rider Information
+          <Text style={styles.emptyTitle}>
+            No Past Trips
           </Text>
 
 
-
-          <DetailRow
-
-            icon="person-outline"
-
-            title="Rider"
-
-            value={ride.rider}
-
-          />
-
-
-
-          <DetailRow
-
-            icon="people-outline"
-
-            title="Passengers"
-
-            value={ride.passengers}
-
-          />
-
-
+          <Text style={styles.emptyText}>
+            You haven't completed any rides yet.
+            Your completed trips will appear here.
+          </Text>
 
         </View>
 
 
+        {/* ================= TRIP STATISTICS ================= */}
+
+        <Text style={styles.sectionTitle}>
+          Trip Statistics
+        </Text>
 
 
+        <View style={styles.statsContainer}>
+
+          <View style={styles.statCard}>
+
+            <Ionicons
+              name="car-outline"
+              size={28}
+              color={Colors.driver}
+            />
+
+            <Text style={styles.statValue}>
+              0
+            </Text>
+
+            <Text style={styles.statLabel}>
+              Completed Trips
+            </Text>
+
+          </View>
 
 
+          <View style={styles.statCard}>
 
+            <Ionicons
+              name="cash-outline"
+              size={28}
+              color={Colors.driver}
+            />
 
-        <View style={styles.card}>
+            <Text style={styles.statValue}>
+              R0
+            </Text>
 
+            <Text style={styles.statLabel}>
+              Total Earnings
+            </Text>
 
-          <Text style={styles.sectionTitle}>
-            Trip Details
-          </Text>
-
-
-
-
-          <DetailRow
-
-            icon="location-outline"
-
-            title="Pickup"
-
-            value={ride.pickup}
-
-          />
-
-
-
-          <DetailRow
-
-            icon="flag-outline"
-
-            title="Destination"
-
-            value={ride.destination}
-
-          />
-
-
-
-          <DetailRow
-
-            icon="time-outline"
-
-            title="Pickup Time"
-
-            value={ride.pickupTime}
-
-          />
-
-
+          </View>
 
         </View>
-
-
-
-
-
-
-
-
-        {/* Earnings */}
-
-
-        <View style={styles.earningsCard}>
-
-
-          <Text style={styles.earningsTitle}>
-            Expected Earnings
-          </Text>
-
-
-          <Text style={styles.amount}>
-            {ride.earnings}
-          </Text>
-
-
-        </View>
-
-
-
-
-
-
-
-        {/* Start Trip */}
-
-
-        <TouchableOpacity
-
-          style={styles.primaryButton}
-
-          onPress={() =>
-            navigation.navigate("ActiveTrip")
-          }
-
-        >
-
-
-          <Ionicons
-
-            name="navigate"
-
-            size={22}
-
-            color={Colors.white}
-
-          />
-
-
-          <Text style={styles.primaryButtonText}>
-            Start Trip
-          </Text>
-
-
-        </TouchableOpacity>
-
-
-
-
-
-
-
-        {/* Back */}
-
-
-        <TouchableOpacity
-
-          style={styles.secondaryButton}
-
-          onPress={() =>
-            navigation.navigate("DriverHome")
-          }
-
-        >
-
-
-          <Text style={styles.secondaryText}>
-            Back to Home
-          </Text>
-
-
-        </TouchableOpacity>
-
-
 
 
       </ScrollView>
 
-
     </SafeAreaView>
 
-
   );
-
 }
-
-
-
-
-
-
-
-
-
-interface DetailProps {
-
-  icon: keyof typeof Ionicons.glyphMap;
-
-  title:string;
-
-  value:string;
-
-}
-
-
-
-
-
-
-
-function DetailRow({
-
-icon,
-
-title,
-
-value,
-
-}:DetailProps){
-
-
-return (
-
-<View style={styles.row}>
-
-
-<View style={styles.left}>
-
-
-<Ionicons
-
-name={icon}
-
-size={22}
-
-color={Colors.driver}
-
-/>
-
-
-<Text style={styles.label}>
-{title}
-</Text>
-
-
-</View>
-
-
-
-
-
-<Text style={styles.value}>
-{value}
-</Text>
-
-
-
-
-</View>
-
-);
-
-
-}
-
-
-
-
-
-
-
 
 
 const styles = StyleSheet.create({
 
-
-container:{
-
-flex:1,
-
-backgroundColor:Colors.background,
-
-},
-
-
-
-
-content:{
-
-padding:20,
-
-paddingBottom:40,
-
-},
-
-
-
-
-
-header:{
-
-alignItems:"center",
-
-marginTop:20,
-
-marginBottom:25,
-
-},
-
-
-
-
-
-heading:{
-
-fontSize:30,
-
-fontWeight:"700",
-
-color:Colors.primary,
-
-marginTop:10,
-
-},
-
-
-
-
-
-subtitle:{
-
-color:Colors.textSecondary,
-
-marginTop:5,
-
-},
-
-
-
-
-
-statusCard:{
-
-backgroundColor:Colors.white,
-
-borderRadius:20,
-
-padding:20,
-
-flexDirection:"row",
-
-alignItems:"center",
-
-gap:15,
-
-marginBottom:20,
-
-elevation:3,
-
-},
-
-
-
-
-
-statusTitle:{
-
-fontSize:15,
-
-color:Colors.textSecondary,
-
-},
-
-
-
-
-
-status:{
-
-fontSize:20,
-
-fontWeight:"700",
-
-color:Colors.success,
-
-},
-
-
-
-
-
-card:{
-
-backgroundColor:Colors.white,
-
-borderRadius:20,
-
-padding:20,
-
-marginBottom:20,
-
-elevation:3,
-
-},
-
-
-
-
-
-sectionTitle:{
-
-fontSize:20,
-
-fontWeight:"700",
-
-color:Colors.primary,
-
-marginBottom:15,
-
-},
-
-
-
-
-
-row:{
-
-flexDirection:"row",
-
-justifyContent:"space-between",
-
-alignItems:"center",
-
-paddingVertical:14,
-
-borderBottomWidth:1,
-
-borderBottomColor:"#ECECEC",
-
-},
-
-
-
-
-
-left:{
-
-flexDirection:"row",
-
-alignItems:"center",
-
-},
-
-
-
-
-
-label:{
-
-marginLeft:12,
-
-color:Colors.primary,
-
-},
-
-
-
-
-
-value:{
-
-fontWeight:"600",
-
-color:Colors.textSecondary,
-
-maxWidth:"45%",
-
-textAlign:"right",
-
-},
-
-
-
-
-
-earningsCard:{
-
-backgroundColor:Colors.white,
-
-borderRadius:20,
-
-padding:20,
-
-alignItems:"center",
-
-marginBottom:20,
-
-},
-
-
-
-
-
-earningsTitle:{
-
-fontSize:17,
-
-color:Colors.primary,
-
-},
-
-
-
-
-
-amount:{
-
-fontSize:30,
-
-fontWeight:"700",
-
-color:Colors.driver,
-
-marginTop:5,
-
-},
-
-
-
-
-
-primaryButton:{
-
-height:58,
-
-backgroundColor:Colors.driver,
-
-borderRadius:15,
-
-justifyContent:"center",
-
-alignItems:"center",
-
-flexDirection:"row",
-
-},
-
-
-
-
-
-primaryButtonText:{
-
-color:Colors.white,
-
-fontSize:18,
-
-fontWeight:"700",
-
-marginLeft:10,
-
-},
-
-
-
-
-
-secondaryButton:{
-
-height:58,
-
-borderWidth:2,
-
-borderColor:Colors.driver,
-
-borderRadius:15,
-
-justifyContent:"center",
-
-alignItems:"center",
-
-marginTop:15,
-
-},
-
-
-
-
-
-secondaryText:{
-
-color:Colors.driver,
-
-fontSize:18,
-
-fontWeight:"700",
-
-},
-
-
+  /* ================= CONTAINER ================= */
+
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+
+  content: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+
+
+  /* ================= BACK BUTTON ================= */
+
+  backButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 23,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+    elevation: 3,
+  },
+
+
+  /* ================= HEADER ================= */
+
+  header: {
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 25,
+  },
+
+  headerIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.driverLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  heading: {
+    fontSize: 30,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginTop: 12,
+  },
+
+  subtitle: {
+    color: Colors.textSecondary,
+    marginTop: 6,
+    textAlign: "center",
+    fontSize: 15,
+  },
+
+
+  /* ================= EMPTY STATE ================= */
+
+  emptyCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 30,
+    alignItems: "center",
+    elevation: 3,
+  },
+
+  emptyIcon: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: Colors.driverLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginTop: 18,
+  },
+
+  emptyText: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+    marginTop: 8,
+  },
+
+
+  /* ================= STATISTICS ================= */
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginTop: 28,
+    marginBottom: 14,
+  },
+
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  statCard: {
+    width: "48%",
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 20,
+    alignItems: "center",
+    elevation: 3,
+  },
+
+  statValue: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginTop: 10,
+  },
+
+  statLabel: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 5,
+  },
 
 });

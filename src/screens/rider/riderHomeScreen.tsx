@@ -1,4 +1,6 @@
+
 import React, { useState } from "react";
+
 import {
   SafeAreaView,
   View,
@@ -8,347 +10,468 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
 
 import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import {
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
 
 import Colors from "../../constants/colors";
-import { RootStackParamList } from "../../navigation/AppNavigator";
 
-type NavigationProp = NativeStackNavigationProp<
+import {
   RootStackParamList,
-  "RiderHome"
->;
+} from "../../navigation/AppNavigator";
+
+import RideMap from "../../components/RideMap";
+
+
+type NavigationProp =
+  NativeStackNavigationProp<
+    RootStackParamList,
+    "RiderHome"
+  >;
+
 
 export default function RiderHomeScreen() {
-  const navigation = useNavigation<NavigationProp>();
 
-  const [pickup, setPickup] = useState("");
-  const [destination, setDestination] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [passengers, setPassengers] = useState("");
+  const navigation =
+    useNavigation<NavigationProp>();
+
+
+  const [pickup, setPickup] =
+    useState("");
+
+  const [destination, setDestination] =
+    useState("");
+
+  const [date, setDate] =
+    useState("");
+
+  const [time, setTime] =
+    useState("");
+
+  const [passengers, setPassengers] =
+    useState("");
+
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* ================= MAP PLACEHOLDER ================= */}
+
+    <SafeAreaView
+      style={styles.container}
+    >
+
+      {/* ================= MAP ================= */}
 
       <View style={styles.mapContainer}>
-        <Ionicons
-          name="map"
-          size={70}
-          color="#6B7280"
-        />
 
-        <Text style={styles.mapTitle}>
-          Google Map
-        </Text>
+        <RideMap />
 
-        <Text style={styles.mapSubtitle}>
-          Map will be displayed here
-        </Text>
-
-        {/* Current Location Button */}
-
-        <TouchableOpacity style={styles.locationButton}>
-          <Ionicons
-            name="locate"
-            size={24}
-            color={Colors.white}
-          />
-        </TouchableOpacity>
       </View>
+
 
       {/* ================= BOTTOM CARD ================= */}
 
       <View style={styles.bottomCard}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.heading}>
-            Search Ride
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+
+          {/* ================= HEADER ================= */}
+
+          <View style={styles.header}>
+
+            <Text style={styles.heading}>
+              Search Ride
+            </Text>
+
+            <Text style={styles.subHeading}>
+              Find a ride that matches your trip.
+            </Text>
+
+          </View>
+
+
+          {/* ================= PICKUP ================= */}
+
+          <Text style={styles.label}>
+            Pickup Location
           </Text>
 
-          <Text style={styles.subHeading}>
-            Enter your trip details below.
-          </Text>
+          <View
+            style={styles.inputContainer}
+          >
 
-          {/* Pickup */}
+            <View style={styles.iconContainer}>
 
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="location"
-              size={20}
-              color={Colors.rider}
-            />
+              <Ionicons
+                name="location"
+                size={20}
+                color={Colors.rider}
+              />
+
+            </View>
 
             <TextInput
-              placeholder="Pickup Location"
+              placeholder="Enter pickup location"
               value={pickup}
               onChangeText={setPickup}
               style={styles.input}
-              placeholderTextColor="#999"
+              placeholderTextColor={Colors.textSecondary}
             />
+
           </View>
 
-          {/* Destination */}
 
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="flag"
-              size={20}
-              color={Colors.rider}
-            />
+          {/* ================= DESTINATION ================= */}
+
+          <Text style={styles.label}>
+            Destination
+          </Text>
+
+          <View
+            style={styles.inputContainer}
+          >
+
+            <View style={styles.iconContainer}>
+
+              <Ionicons
+                name="flag"
+                size={20}
+                color={Colors.rider}
+              />
+
+            </View>
 
             <TextInput
-              placeholder="Destination"
+              placeholder="Enter destination"
               value={destination}
               onChangeText={setDestination}
               style={styles.input}
-              placeholderTextColor="#999"
+              placeholderTextColor={Colors.textSecondary}
             />
+
           </View>
 
-          {/* Date */}
 
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="calendar"
-              size={20}
-              color={Colors.rider}
-            />
+          {/* ================= DATE ================= */}
+
+          <Text style={styles.label}>
+            Date
+          </Text>
+
+          <View
+            style={styles.inputContainer}
+          >
+
+            <View style={styles.iconContainer}>
+
+              <Ionicons
+                name="calendar"
+                size={20}
+                color={Colors.rider}
+              />
+
+            </View>
 
             <TextInput
-              placeholder="Date"
+              placeholder="Select date"
               value={date}
               onChangeText={setDate}
               style={styles.input}
-              placeholderTextColor="#999"
+              placeholderTextColor={Colors.textSecondary}
             />
+
           </View>
 
-          {/* Time */}
 
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="time"
-              size={20}
-              color={Colors.rider}
-            />
+          {/* ================= TIME ================= */}
+
+          <Text style={styles.label}>
+            Departure Time
+          </Text>
+
+          <View
+            style={styles.inputContainer}
+          >
+
+            <View style={styles.iconContainer}>
+
+              <Ionicons
+                name="time"
+                size={20}
+                color={Colors.rider}
+              />
+
+            </View>
 
             <TextInput
-              placeholder="Time"
+              placeholder="Select departure time"
               value={time}
               onChangeText={setTime}
               style={styles.input}
-              placeholderTextColor="#999"
+              placeholderTextColor={Colors.textSecondary}
             />
+
           </View>
 
-          {/* Passengers */}
 
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="people"
-              size={20}
-              color={Colors.rider}
-            />
+          {/* ================= PASSENGERS ================= */}
+
+          <Text style={styles.label}>
+            Passengers
+          </Text>
+
+          <View
+            style={styles.inputContainer}
+          >
+
+            <View style={styles.iconContainer}>
+
+              <Ionicons
+                name="people"
+                size={20}
+                color={Colors.rider}
+              />
+
+            </View>
 
             <TextInput
-              placeholder="Passengers"
+              placeholder="Number of passengers"
               keyboardType="numeric"
               value={passengers}
               onChangeText={setPassengers}
               style={styles.input}
-              placeholderTextColor="#999"
+              placeholderTextColor={Colors.textSecondary}
             />
+
           </View>
 
-          {/* Vicinity */}
 
-          <View style={styles.vicinityCard}>
-            <Text style={styles.vicinityTitle}>
-              Nearby Information
-            </Text>
-
-            <View style={styles.infoRow}>
-              <Ionicons
-                name="location-outline"
-                size={18}
-                color={Colors.rider}
-              />
-
-              <Text style={styles.infoText}>
-                Current Area: Bellville
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Ionicons
-                name="car-outline"
-                size={18}
-                color={Colors.rider}
-              />
-
-              <Text style={styles.infoText}>
-                Drivers Nearby: 8
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Ionicons
-                name="timer-outline"
-                size={18}
-                color={Colors.rider}
-              />
-
-              <Text style={styles.infoText}>
-                Average Wait: 5 min
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Ionicons
-                name="navigate-outline"
-                size={18}
-                color={Colors.rider}
-              />
-
-              <Text style={styles.infoText}>
-                Closest Driver: 850 m
-              </Text>
-            </View>
-          </View>
-
-          {/* Search Button */}
+          {/* ================= SEARCH BUTTON ================= */}
 
           <TouchableOpacity
             style={styles.searchButton}
-            onPress={() => navigation.navigate("SearchResults")}
+            onPress={() =>
+              navigation.navigate(
+                "SearchResults"
+              )
+            }
+            activeOpacity={0.8}
           >
-            <Text style={styles.searchButtonText}>
+
+            <Ionicons
+              name="search"
+              size={21}
+              color={Colors.white}
+            />
+
+            <Text
+              style={styles.searchButtonText}
+            >
               Search Ride
             </Text>
+
           </TouchableOpacity>
+
+
         </ScrollView>
+
       </View>
+
     </SafeAreaView>
+
   );
 }
 
+
+// ==================================================
+// STYLES
+// ==================================================
+
 const styles = StyleSheet.create({
+
+  // ================= CONTAINER =================
+
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor:
+      Colors.background,
   },
+
+
+  // ================= MAP =================
 
   mapContainer: {
     flex: 1,
-    backgroundColor: "#DCEAF5",
-    justifyContent: "center",
-    alignItems: "center",
     position: "relative",
+    overflow: "hidden",
   },
 
-  mapTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: Colors.primary,
-    marginTop: 15,
-  },
 
-  mapSubtitle: {
-    color: Colors.textSecondary,
-    marginTop: 8,
-  },
-
-  locationButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    width: 55,
-    height: 55,
-    borderRadius: 30,
-    backgroundColor: Colors.rider,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 6,
-  },
+  // ================= BOTTOM CARD =================
 
   bottomCard: {
     flex: 1.25,
-    backgroundColor: Colors.white,
+
+    backgroundColor:
+      Colors.white,
+
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    padding: 20,
+
+    paddingTop: 24,
+    paddingHorizontal: 20,
+
+    elevation: 8,
   },
 
-  heading: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: Colors.primary,
+
+  scrollContent: {
+    paddingBottom: 25,
   },
 
-  subHeading: {
-    color: Colors.textSecondary,
-    marginTop: 5,
-    marginBottom: 20,
-  },
 
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.background,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-  },
+  // ================= HEADER =================
 
-  input: {
-    flex: 1,
-    height: 55,
-    marginLeft: 10,
-    color: Colors.primary,
-  },
-
-  vicinityCard: {
-    marginTop: 10,
-    backgroundColor: "#EEF5FB",
-    borderRadius: 18,
-    padding: 18,
-  },
-
-  vicinityTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.primary,
-    marginBottom: 15,
-  },
-
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  header: {
     marginBottom: 12,
   },
 
-  infoText: {
+
+  heading: {
+    fontSize: 28,
+
+    fontWeight: "700",
+
+    color:
+      Colors.primary,
+  },
+
+
+  subHeading: {
+    color:
+      Colors.textSecondary,
+
+    fontSize: 15,
+
+    marginTop: 5,
+
+    lineHeight: 21,
+  },
+
+
+  // ================= LABELS =================
+
+  label: {
+    fontSize: 14,
+
+    fontWeight: "600",
+
+    color:
+      Colors.primary,
+
+    marginBottom: 7,
+
+    marginTop: 10,
+  },
+
+
+  // ================= INPUTS =================
+
+  inputContainer: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    backgroundColor:
+      Colors.background,
+
+    borderRadius: 15,
+
+    minHeight: 58,
+
+    paddingHorizontal: 12,
+
+    marginBottom: 8,
+
+    borderWidth: 1,
+
+    borderColor: "#E6EAF0",
+  },
+
+
+  iconContainer: {
+    width: 36,
+
+    height: 36,
+
+    borderRadius: 18,
+
+    backgroundColor:
+      Colors.white,
+
+    justifyContent:
+      "center",
+
+    alignItems:
+      "center",
+  },
+
+
+  input: {
+    flex: 1,
+
+    height: 55,
+
     marginLeft: 10,
-    color: Colors.textSecondary,
+
+    color:
+      Colors.primary,
+
     fontSize: 15,
   },
 
+
+  // ================= SEARCH BUTTON =================
+
   searchButton: {
-    backgroundColor: Colors.rider,
+    backgroundColor:
+      Colors.rider,
+
     height: 58,
+
     borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 25,
-    marginBottom: 20,
+
+    justifyContent:
+      "center",
+
+    alignItems:
+      "center",
+
+    flexDirection: "row",
+
+    marginTop: 22,
+
+    marginBottom: 10,
+
+    elevation: 3,
   },
 
+
   searchButtonText: {
-    color: Colors.white,
+    color:
+      Colors.white,
+
     fontWeight: "700",
+
     fontSize: 18,
+
+    marginLeft: 8,
   },
+
 });

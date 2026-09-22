@@ -8,35 +8,33 @@ import {
   createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 
-
-// ================= Main Screens =================
+// ================= MAIN SCREENS =================
 
 import WelcomeScreen from "../screens/welcomeScreen";
 import RoleSelectionScreen from "../screens/roleSelectionScreen";
 
-
-
-// ================= Rider Authentication =================
+// ================= RIDER AUTHENTICATION =================
 
 import RiderLoginScreen from "../screens/auth/rider/riderLoginScreen";
 import RiderRegisterScreen from "../screens/auth/rider/riderRegisterScreen";
 
+// ================= SHARED AUTHENTICATION =================
 
+import ForgotPasswordScreen from "../screens/auth/ForgotPassword";
+import PasswordResetSentScreen from "../screens/auth/PasswordResetSent";
+import ResetPasswordScreen from "../screens/auth/ResetPassword";
+import EmailVerificationScreen from "../screens/auth/EmailVerification";
 
-// ================= Driver Authentication =================
+// ================= DRIVER AUTHENTICATION =================
 
 import DriverLoginScreen from "../screens/auth/driver/driverLoginScreen";
 import DriverRegisterScreen from "../screens/auth/driver/driverRegisterScreen";
 
-
-
-// ================= Driver Navigation =================
+// ================= DRIVER NAVIGATION =================
 
 import DriverNavigationTab from "./DriverNavigationTab";
 
-
-
-// ================= Driver Screens =================
+// ================= DRIVER SCREENS =================
 
 import RiderRequestsScreen from "../screens/driver/riderRequestScreen";
 import RiderRequestDetailsScreen from "../screens/driver/riderRequestDetails";
@@ -53,56 +51,88 @@ import ViewMyRideScreen from "../screens/driver/viewMyRide";
 
 import DriverProfileScreen from "../screens/driver/driverProfile";
 
+import DriverEditInformationScreen from "../screens/driver/driverSetupScreen";
+import DriverSettingsScreen from "../screens/driver/driverSettingsScreen";
 
-
-// ================= Admin =================
+// ================= ADMIN =================
 
 import AdminLoginScreen from "../screens/auth/admin/adminLoginScreen";
 
-
-
-// ================= Rider Navigation =================
+// ================= RIDER NAVIGATION =================
 
 import RiderTabNavigator from "./RiderNavigationTab";
 
-
-
-// ================= Rider Screens =================
+// ================= RIDER SCREENS =================
 
 import SearchResultsScreen from "../screens/rider/searchResults";
+
 import RideDetailsScreen from "../screens/rider/rideDetails";
+
 import BookingConfirmedScreen from "../screens/rider/bookingConfirmed";
+import RiderSetupScreen from "../screens/rider/riderSetupScreen";
+
 import PaymentMethodScreen from "../screens/rider/paymentMethod";
+
 import TrackDriverScreen from "../screens/rider/trackDriverScreen";
+
 import TripReceiptScreen from "../screens/rider/tripReceiptScreen";
+import RiderSettingsScreen from "../screens/rider/riderSettingsScreen";
 
 
-
-
-
-// ================= Navigation Types =================
-
+// ======================================================
+// NAVIGATION TYPES
+// ======================================================
 
 export type RootStackParamList = {
 
-
-  // Main
+  // ================= MAIN =================
 
   Welcome: undefined;
 
   RoleSelection: undefined;
 
 
-
-  // Rider Auth
+  // ================= RIDER AUTH =================
 
   RiderLogin: undefined;
 
   RiderRegister: undefined;
 
 
+  // ================= DRIVER AUTH =================
 
-  // Rider
+  DriverLogin: undefined;
+
+  DriverRegister: undefined;
+
+
+  // ================= EMAIL VERIFICATION =================
+
+  EmailVerification: {
+    email: string;
+    token?: string;
+    role: "rider" | "driver";
+  };
+
+
+  // ================= PASSWORD RESET =================
+
+  ForgotPassword: {
+    role: "rider" | "driver";
+  };
+
+  PasswordResetSent: {
+    role: "rider" | "driver";
+    email: string;
+  };
+
+  ResetPassword: {
+    token: string;
+    role: "rider" | "driver";
+  };
+
+
+  // ================= RIDER =================
 
   RiderHome: undefined;
 
@@ -118,348 +148,267 @@ export type RootStackParamList = {
 
   TripReceipt: undefined;
 
+  RiderEditInformation: undefined;
+
+  RiderSettings: undefined;
 
 
-  // Driver Auth
-
-  DriverLogin: undefined;
-
-  DriverRegister: undefined;
-
-
-
-  // Driver Navigation
+  // ================= DRIVER =================
 
   DriverHome: undefined;
 
-
-
-  // Driver Screens
-
+  DriverEditInformation: undefined;
 
   RiderRequests: undefined;
 
-
-  RiderRequestDetails:{
-    rider:{
-      name:string;
-      pickup:string;
-      destination:string;
-      pickupTime:string;
-      distance:string;
-      routeMatch:string;
-      passengers:number;
-      gender:string;
-      offer:string;
+  RiderRequestDetails: {
+    rider: {
+      name: string;
+      pickup: string;
+      destination: string;
+      pickupTime: string;
+      distance: string;
+      routeMatch: string;
+      passengers: number;
+      gender: string;
+      offer: string;
     };
   };
 
+  CreateRideOffer: undefined;
 
-  CreateRideOffer:undefined;
+  RideConfirmation: undefined;
 
+  ActiveTrip: undefined;
 
-  RideConfirmation:undefined;
+  ViewMyRide: undefined;
 
+  RideOfferConfirmation: {
+    rideId: string;
+  };
 
-  ActiveTrip:undefined;
+  DriverProfile: undefined;
 
-
-  ViewMyRide:undefined;
-
-
-  RideOfferConfirmation:undefined;
-
-
-  DriverProfile:undefined;
+  DriverSettings: undefined;
 
 
+  // ================= ADMIN =================
 
-  // Admin
+  AdminLogin: undefined;
 
-  AdminLogin:undefined;
-
-  AdminDashboard:undefined;
-
-
+  AdminDashboard: undefined;
 };
 
 
-
-
+// ======================================================
+// STACK NAVIGATOR
+// ======================================================
 
 const Stack =
-createNativeStackNavigator<RootStackParamList>();
+  createNativeStackNavigator<RootStackParamList>();
 
 
+// ======================================================
+// APP NAVIGATOR
+// ======================================================
 
+export default function AppNavigator() {
 
+  return (
 
-export default function AppNavigator(){
+    <NavigationContainer>
 
+      <Stack.Navigator
+        initialRouteName="Welcome"
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
 
-return(
+        {/* ================= MAIN ================= */}
 
-<NavigationContainer>
+        <Stack.Screen
+          name="Welcome"
+          component={WelcomeScreen}
+        />
 
+        <Stack.Screen
+          name="RoleSelection"
+          component={RoleSelectionScreen}
+        />
 
-<Stack.Navigator
 
-initialRouteName="Welcome"
+        {/* ================= RIDER AUTH ================= */}
 
-screenOptions={{
+        <Stack.Screen
+          name="RiderLogin"
+          component={RiderLoginScreen}
+        />
 
-headerShown:false,
+        <Stack.Screen
+          name="RiderRegister"
+          component={RiderRegisterScreen}
+        />
 
-animation:"slide_from_right",
 
-}}
+        {/* ================= DRIVER AUTH ================= */}
 
->
+        <Stack.Screen
+          name="DriverLogin"
+          component={DriverLoginScreen}
+        />
 
+        <Stack.Screen
+          name="DriverRegister"
+          component={DriverRegisterScreen}
+        />
 
-{/* ================= MAIN ================= */}
 
+        {/* ================= SHARED AUTH ================= */}
 
-<Stack.Screen
+        <Stack.Screen
+          name="ForgotPassword"
+          component={ForgotPasswordScreen}
+        />
 
-name="Welcome"
+        <Stack.Screen
+          name="PasswordResetSent"
+          component={PasswordResetSentScreen}
+        />
 
-component={WelcomeScreen}
+        <Stack.Screen
+          name="ResetPassword"
+          component={ResetPasswordScreen}
+        />
 
-/>
+        <Stack.Screen
+          name="EmailVerification"
+          component={EmailVerificationScreen}
+        />
 
 
-<Stack.Screen
+        {/* ================= RIDER NAVIGATION ================= */}
 
-name="RoleSelection"
+        <Stack.Screen
+          name="RiderHome"
+          component={RiderTabNavigator}
+        />
 
-component={RoleSelectionScreen}
 
-/>
+        {/* ================= RIDER SCREENS ================= */}
 
+        <Stack.Screen
+          name="SearchResults"
+          component={SearchResultsScreen}
+        />
 
+        <Stack.Screen
+          name="RideDetails"
+          component={RideDetailsScreen}
+        />
+
+        <Stack.Screen
+          name="BookingConfirmed"
+          component={BookingConfirmedScreen}
+        />
 
+        <Stack.Screen
+          name="PaymentMethod"
+          component={PaymentMethodScreen}
+        />
 
-{/* ================= RIDER ================= */}
+        <Stack.Screen
+          name="TrackDriver"
+          component={TrackDriverScreen}
+        />
 
+        <Stack.Screen
+          name="TripReceipt"
+          component={TripReceiptScreen}
+        />
 
-<Stack.Screen
+        <Stack.Screen
+          name="RiderEditInformation"
+          component={RiderSetupScreen}
+        />
 
-name="RiderLogin"
+        <Stack.Screen
+          name="RiderSettings"
+          component={RiderSettingsScreen}
+        />
 
-component={RiderLoginScreen}
 
-/>
+        {/* ================= DRIVER NAVIGATION ================= */}
 
+        <Stack.Screen
+          name="DriverHome"
+          component={DriverNavigationTab}
+        />
 
-<Stack.Screen
 
-name="RiderRegister"
+        {/* ================= DRIVER SCREENS ================= */}
 
-component={RiderRegisterScreen}
+        <Stack.Screen
+          name="RiderRequests"
+          component={RiderRequestsScreen}
+        />
 
-/>
+        <Stack.Screen
+          name="RiderRequestDetails"
+          component={RiderRequestDetailsScreen}
+        />
 
+        <Stack.Screen
+          name="CreateRideOffer"
+          component={CreateRideOfferScreen}
+        />
 
-<Stack.Screen
+        <Stack.Screen
+          name="RideConfirmation"
+          component={RideConfirmationScreen}
+        />
 
-name="RiderHome"
+        <Stack.Screen
+          name="RideOfferConfirmation"
+          component={RideOfferConfirmationScreen}
+        />
 
-component={RiderTabNavigator}
+        <Stack.Screen
+          name="ActiveTrip"
+          component={ActiveTripScreen}
+        />
 
-/>
+        <Stack.Screen
+          name="ViewMyRide"
+          component={ViewMyRideScreen}
+        />
 
+        <Stack.Screen
+          name="DriverProfile"
+          component={DriverProfileScreen}
+        />
 
-<Stack.Screen
+        <Stack.Screen
+          name="DriverEditInformation"
+          component={DriverEditInformationScreen}
+        />
 
-name="SearchResults"
+        <Stack.Screen
+          name="DriverSettings"
+          component={DriverSettingsScreen}
+        />
 
-component={SearchResultsScreen}
 
-/>
+        {/* ================= ADMIN ================= */}
 
+        <Stack.Screen
+          name="AdminLogin"
+          component={AdminLoginScreen}
+        />
 
-<Stack.Screen
+      </Stack.Navigator>
 
-name="RideDetails"
+    </NavigationContainer>
 
-component={RideDetailsScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="BookingConfirmed"
-
-component={BookingConfirmedScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="PaymentMethod"
-
-component={PaymentMethodScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="TrackDriver"
-
-component={TrackDriverScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="TripReceipt"
-
-component={TripReceiptScreen}
-
-/>
-
-
-
-
-
-{/* ================= DRIVER ================= */}
-
-
-
-<Stack.Screen
-
-name="DriverLogin"
-
-component={DriverLoginScreen}
-
-/>
-
-
-
-<Stack.Screen
-
-name="DriverRegister"
-
-component={DriverRegisterScreen}
-
-/>
-
-
-
-{/* Driver Bottom Tabs */}
-
-<Stack.Screen
-
-name="DriverHome"
-
-component={DriverNavigationTab}
-
-/>
-
-
-
-{/* Driver Pages */}
-
-
-<Stack.Screen
-
-name="RiderRequests"
-
-component={RiderRequestsScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="RiderRequestDetails"
-
-component={RiderRequestDetailsScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="CreateRideOffer"
-
-component={CreateRideOfferScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="RideConfirmation"
-
-component={RideConfirmationScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="ActiveTrip"
-
-component={ActiveTripScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="ViewMyRide"
-
-component={ViewMyRideScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="RideOfferConfirmation"
-
-component={RideOfferConfirmationScreen}
-
-/>
-
-
-<Stack.Screen
-
-name="DriverProfile"
-
-component={DriverProfileScreen}
-
-/>
-
-
-
-
-
-{/* ================= ADMIN ================= */}
-
-
-<Stack.Screen
-
-name="AdminLogin"
-
-component={AdminLoginScreen}
-
-/>
-
-
-</Stack.Navigator>
-
-
-</NavigationContainer>
-
-
-);
-
-
+  );
 }
