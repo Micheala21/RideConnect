@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 import {
@@ -55,6 +54,29 @@ export default function RiderHomeScreen() {
 
   const [passengers, setPassengers] =
     useState("");
+
+
+  // ==================================================
+  // SEARCH RIDE
+  // ==================================================
+
+  const handleSearchRide = () => {
+  console.log("SEARCH VALUES:", {
+    pickup,
+    destination,
+    date,
+    time,
+    passengers,
+  });
+
+  navigation.navigate("SearchResults", {
+    pickup: pickup.trim(),
+    destination: destination.trim(),
+    date: date.trim(),
+    time: time.trim(),
+    passengers: passengers.trim(),
+  });
+};
 
 
   return (
@@ -121,7 +143,9 @@ export default function RiderHomeScreen() {
               value={pickup}
               onChangeText={setPickup}
               style={styles.input}
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={
+                Colors.textSecondary
+              }
             />
 
           </View>
@@ -152,7 +176,9 @@ export default function RiderHomeScreen() {
               value={destination}
               onChangeText={setDestination}
               style={styles.input}
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={
+                Colors.textSecondary
+              }
             />
 
           </View>
@@ -183,7 +209,9 @@ export default function RiderHomeScreen() {
               value={date}
               onChangeText={setDate}
               style={styles.input}
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={
+                Colors.textSecondary
+              }
             />
 
           </View>
@@ -214,7 +242,9 @@ export default function RiderHomeScreen() {
               value={time}
               onChangeText={setTime}
               style={styles.input}
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={
+                Colors.textSecondary
+              }
             />
 
           </View>
@@ -246,7 +276,9 @@ export default function RiderHomeScreen() {
               value={passengers}
               onChangeText={setPassengers}
               style={styles.input}
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={
+                Colors.textSecondary
+              }
             />
 
           </View>
@@ -254,30 +286,14 @@ export default function RiderHomeScreen() {
 
           {/* ================= SEARCH BUTTON ================= */}
 
-          <TouchableOpacity
-            style={styles.searchButton}
-            onPress={() =>
-              navigation.navigate(
-                "SearchResults"
-              )
-            }
-            activeOpacity={0.8}
-          >
-
-            <Ionicons
-              name="search"
-              size={21}
-              color={Colors.white}
-            />
-
-            <Text
-              style={styles.searchButtonText}
-            >
-              Search Ride
-            </Text>
-
-          </TouchableOpacity>
-
+  <TouchableOpacity
+  style={styles.searchButton}
+  onPress={handleSearchRide}
+>
+  <Text style={styles.searchButtonText}>
+    Search Ride
+  </Text>
+</TouchableOpacity>
 
         </ScrollView>
 

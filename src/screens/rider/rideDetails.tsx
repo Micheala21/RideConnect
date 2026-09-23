@@ -1,5 +1,5 @@
-
 import React from "react";
+
 import {
   SafeAreaView,
   View,
@@ -9,31 +9,44 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+
+import {
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
+
+import {
+  useNavigation,
+  useRoute,
+  RouteProp,
+} from "@react-navigation/native";
 
 import Colors from "../../constants/colors";
-import { RootStackParamList } from "../../navigation/AppNavigator";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import {
+  RootStackParamList,
+} from "../../navigation/AppNavigator";
+
+type NavigationProp =
+  NativeStackNavigationProp<
+    RootStackParamList
+  >;
+
+type RideDetailsRouteProp =
+  RouteProp<
+    RootStackParamList,
+    "RideDetails"
+  >;
 
 export default function RideDetailsScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation =
+    useNavigation<NavigationProp>();
 
-  const driver = {
-    name: "Alice Johnson",
-    vehicle: "Toyota Prius",
-    rating: 4.9,
-    price: "R120",
-    pickup: "CPUT Bellville Campus",
-    destination: "Cape Town CBD",
-    departure: "08:30 AM",
-    seats: 3,
-    gender: "Female",
-    phone: "082 123 4567",
-    avatar: "https://placehold.co/200x200",
-  };
+  const route =
+    useRoute<RideDetailsRouteProp>();
+
+  const { ride } = route.params;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,6 +54,7 @@ export default function RideDetailsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
+
         {/* Back Button */}
 
         <TouchableOpacity
@@ -58,44 +72,39 @@ export default function RideDetailsScreen() {
         {/* Driver Header */}
 
         <View style={styles.driverHeader}>
+
           <Image
-            source={{ uri: driver.avatar }}
+            source={{
+              uri: "https://placehold.co/200x200",
+            }}
             style={styles.avatar}
           />
 
           <Text style={styles.name}>
-            {driver.name}
+            {ride.driverName}
           </Text>
 
           <View style={styles.ratingContainer}>
-            <Ionicons
-              name="star"
-              size={18}
-              color={Colors.rider}
-            />
-
-            <Text style={styles.rating}>
-              {driver.rating}
-            </Text>
-
-            <View style={styles.dot} />
 
             <Ionicons
               name="shield-checkmark"
-              size={17}
+              size={18}
               color={Colors.rider}
             />
 
             <Text style={styles.verified}>
               Verified Driver
             </Text>
+
           </View>
         </View>
 
         {/* Driver Information */}
 
         <View style={styles.card}>
+
           <View style={styles.cardHeader}>
+
             <View style={styles.sectionIcon}>
               <Ionicons
                 name="person-outline"
@@ -107,38 +116,30 @@ export default function RideDetailsScreen() {
             <Text style={styles.sectionTitle}>
               Driver Information
             </Text>
+
           </View>
 
           <DetailRow
             icon="car-outline"
             title="Vehicle"
-            value={driver.vehicle}
-          />
-
-          <DetailRow
-            icon="person-outline"
-            title="Gender"
-            value={driver.gender}
-          />
-
-          <DetailRow
-            icon="call-outline"
-            title="Phone"
-            value={driver.phone}
+            value={ride.vehicle}
           />
 
           <DetailRow
             icon="people-outline"
             title="Seats Available"
-            value={driver.seats.toString()}
+            value={ride.available_seats.toString()}
             last
           />
+
         </View>
 
         {/* Trip Information */}
 
         <View style={styles.card}>
+
           <View style={styles.cardHeader}>
+
             <View style={styles.sectionIcon}>
               <Ionicons
                 name="navigate-outline"
@@ -150,39 +151,49 @@ export default function RideDetailsScreen() {
             <Text style={styles.sectionTitle}>
               Trip Information
             </Text>
+
           </View>
 
           <DetailRow
             icon="location-outline"
             title="Pickup"
-            value={driver.pickup}
+            value={ride.pickup_location}
           />
 
           <DetailRow
             icon="flag-outline"
             title="Destination"
-            value={driver.destination}
+            value={ride.destination}
+          />
+
+          <DetailRow
+            icon="calendar-outline"
+            title="Date"
+            value={ride.ride_date}
           />
 
           <DetailRow
             icon="time-outline"
             title="Departure"
-            value={driver.departure}
+            value={ride.departure_time}
           />
 
           <DetailRow
             icon="cash-outline"
             title="Price"
-            value={driver.price}
+            value={`R${ride.fare}`}
             highlight
             last
           />
+
         </View>
 
         {/* Ride Information */}
 
         <View style={styles.card}>
+
           <View style={styles.cardHeader}>
+
             <View style={styles.sectionIcon}>
               <Ionicons
                 name="information-circle-outline"
@@ -194,42 +205,75 @@ export default function RideDetailsScreen() {
             <Text style={styles.sectionTitle}>
               Ride Information
             </Text>
+
           </View>
 
           <DetailRow
-            icon="speedometer-outline"
-            title="Estimated Duration"
-            value="35 Minutes"
+            icon="people-outline"
+            title="Passengers"
+            value={`${ride.available_seats} seats available`}
           />
 
           <DetailRow
-            icon="navigate-outline"
-            title="Distance"
-            value="24 km"
+            icon="checkmark-circle-outline"
+            title="Status"
+            value={ride.status}
           />
 
           <DetailRow
-            icon="star-outline"
-            title="Driver Experience"
-            value="4 Years"
-          />
-
-          <DetailRow
-            icon="shield-checkmark-outline"
-            title="Verification"
-            value="Verified"
-            highlight
+            icon="document-text-outline"
+            title="Notes"
+            value={
+              ride.notes || "No additional notes"
+            }
             last
           />
+
+        </View>
+
+        {/* Match Percentage */}
+
+        <View style={styles.matchCard}>
+
+          <View style={styles.matchIcon}>
+            <Ionicons
+              name="sparkles-outline"
+              size={22}
+              color={Colors.rider}
+            />
+          </View>
+
+          <View style={styles.matchContent}>
+
+            <Text style={styles.matchTitle}>
+              Ride Match
+            </Text>
+
+            <Text style={styles.matchDescription}>
+              This ride matches your search
+              preferences.
+            </Text>
+
+          </View>
+
+          <Text style={styles.matchPercentage}>
+            {ride.similarity}%
+          </Text>
+
         </View>
 
         {/* Continue to Payment */}
 
         <TouchableOpacity
           style={styles.bookButton}
-          onPress={() => navigation.navigate("PaymentMethod")}
+          onPress={() =>
+            navigation.navigate(
+              "PaymentMethod"
+            )
+          }
           activeOpacity={0.8}
         >
+
           <Ionicons
             name="card-outline"
             size={22}
@@ -245,7 +289,9 @@ export default function RideDetailsScreen() {
             size={20}
             color={Colors.white}
           />
+
         </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -273,28 +319,35 @@ function DetailRow({
         !last && styles.rowBorder,
       ]}
     >
+
       <View style={styles.left}>
+
         <View style={styles.detailIcon}>
+
           <Ionicons
             name={icon}
             size={18}
             color={Colors.rider}
           />
+
         </View>
 
         <Text style={styles.label}>
           {title}
         </Text>
+
       </View>
 
       <Text
         style={[
           styles.value,
-          highlight && styles.highlightValue,
+          highlight &&
+            styles.highlightValue,
         ]}
       >
         {value}
       </Text>
+
     </View>
   );
 }
@@ -348,25 +401,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  rating: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.primary,
-    marginLeft: 5,
-  },
-
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.textSecondary,
-    marginHorizontal: 9,
-  },
-
   verified: {
     fontSize: 14,
     color: Colors.textSecondary,
-    marginLeft: 5,
+    marginLeft: 6,
   },
 
   card: {
@@ -454,6 +492,49 @@ const styles = StyleSheet.create({
   highlightValue: {
     color: Colors.rider,
     fontWeight: "700",
+  },
+
+  matchCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 17,
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    elevation: 3,
+  },
+
+  matchIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#EEF5FB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  matchContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  matchTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+
+  matchDescription: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 3,
+  },
+
+  matchPercentage: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: Colors.rider,
+    marginLeft: 8,
   },
 
   bookButton: {

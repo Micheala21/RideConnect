@@ -80,6 +80,42 @@ import RiderSettingsScreen from "../screens/rider/riderSettingsScreen";
 
 
 // ======================================================
+// RIDE TYPE
+// ======================================================
+
+export type Ride = {
+
+  id: string;
+
+  driver_id: string;
+
+  pickup_location: string;
+
+  destination: string;
+
+  ride_date: string;
+
+  departure_time: string;
+
+  available_seats: number;
+
+  fare: number;
+
+  notes: string | null;
+
+  status: string;
+
+  driverName: string;
+
+  vehicle: string;
+
+  // Used for rider search matching
+  similarity?: number;
+
+};
+
+
+// ======================================================
 // NAVIGATION TYPES
 // ======================================================
 
@@ -109,26 +145,38 @@ export type RootStackParamList = {
   // ================= EMAIL VERIFICATION =================
 
   EmailVerification: {
+
     email: string;
+
     token?: string;
+
     role: "rider" | "driver";
+
   };
 
 
   // ================= PASSWORD RESET =================
 
   ForgotPassword: {
+
     role: "rider" | "driver";
+
   };
 
   PasswordResetSent: {
+
     role: "rider" | "driver";
+
     email: string;
+
   };
 
   ResetPassword: {
+
     token: string;
+
     role: "rider" | "driver";
+
   };
 
 
@@ -136,9 +184,31 @@ export type RootStackParamList = {
 
   RiderHome: undefined;
 
-  SearchResults: undefined;
 
-  RideDetails: undefined;
+  // IMPORTANT:
+  // SearchResults now receives the rider's search information.
+
+  SearchResults: {
+
+    pickup: string;
+
+    destination: string;
+
+    date: string;
+
+    time: string;
+
+    passengers: string;
+
+  };
+
+
+  RideDetails: {
+
+    ride: Ride;
+
+  };
+
 
   BookingConfirmed: undefined;
 
@@ -161,19 +231,33 @@ export type RootStackParamList = {
 
   RiderRequests: undefined;
 
+
   RiderRequestDetails: {
+
     rider: {
+
       name: string;
+
       pickup: string;
+
       destination: string;
+
       pickupTime: string;
+
       distance: string;
+
       routeMatch: string;
+
       passengers: number;
+
       gender: string;
+
       offer: string;
+
     };
+
   };
+
 
   CreateRideOffer: undefined;
 
@@ -183,9 +267,13 @@ export type RootStackParamList = {
 
   ViewMyRide: undefined;
 
+
   RideOfferConfirmation: {
+
     rideId: string;
+
   };
+
 
   DriverProfile: undefined;
 
@@ -196,7 +284,6 @@ export type RootStackParamList = {
 
   AdminLogin: undefined;
 
-  AdminDashboard: undefined;
 };
 
 
@@ -205,7 +292,9 @@ export type RootStackParamList = {
 // ======================================================
 
 const Stack =
-  createNativeStackNavigator<RootStackParamList>();
+  createNativeStackNavigator<
+    RootStackParamList
+  >();
 
 
 // ======================================================
@@ -355,47 +444,65 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="RiderRequestDetails"
-          component={RiderRequestDetailsScreen}
+          component={
+            RiderRequestDetailsScreen
+          }
         />
 
         <Stack.Screen
           name="CreateRideOffer"
-          component={CreateRideOfferScreen}
+          component={
+            CreateRideOfferScreen
+          }
         />
 
         <Stack.Screen
           name="RideConfirmation"
-          component={RideConfirmationScreen}
+          component={
+            RideConfirmationScreen
+          }
         />
 
         <Stack.Screen
           name="RideOfferConfirmation"
-          component={RideOfferConfirmationScreen}
+          component={
+            RideOfferConfirmationScreen
+          }
         />
 
         <Stack.Screen
           name="ActiveTrip"
-          component={ActiveTripScreen}
+          component={
+            ActiveTripScreen
+          }
         />
 
         <Stack.Screen
           name="ViewMyRide"
-          component={ViewMyRideScreen}
+          component={
+            ViewMyRideScreen
+          }
         />
 
         <Stack.Screen
           name="DriverProfile"
-          component={DriverProfileScreen}
+          component={
+            DriverProfileScreen
+          }
         />
 
         <Stack.Screen
           name="DriverEditInformation"
-          component={DriverEditInformationScreen}
+          component={
+            DriverEditInformationScreen
+          }
         />
 
         <Stack.Screen
           name="DriverSettings"
-          component={DriverSettingsScreen}
+          component={
+            DriverSettingsScreen
+          }
         />
 
 
@@ -403,7 +510,9 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="AdminLogin"
-          component={AdminLoginScreen}
+          component={
+            AdminLoginScreen
+          }
         />
 
       </Stack.Navigator>
@@ -411,4 +520,5 @@ export default function AppNavigator() {
     </NavigationContainer>
 
   );
+
 }

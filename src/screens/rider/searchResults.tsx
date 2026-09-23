@@ -5,28 +5,24 @@ import React, {
 } from "react";
 
 import {
+  SafeAreaView,
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
-  Image,
-  TextInput,
-  SafeAreaView,
   ActivityIndicator,
 } from "react-native";
 
-import { Ionicons } from "@expo/vector-icons";
+import {
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 
 import {
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
-
-import {
-  useNavigation,
-} from "@react-navigation/native";
-
-import FilterModal from "../../components/filterModal";
 
 import Colors from "../../constants/colors";
 
@@ -34,17 +30,19 @@ import {
   RootStackParamList,
 } from "../../navigation/AppNavigator";
 
-import {
-  supabase,
-} from "../../lib/supabaseClient";
-
-
+import { supabase } from "../../lib/supabaseClient";
+import { Ionicons } from "@expo/vector-icons";
 type NavigationProp =
   NativeStackNavigationProp<
     RootStackParamList,
-    "RiderHome"
+    "SearchResults"
   >;
 
+type SearchResultsRouteProp =
+  RouteProp<
+    RootStackParamList,
+    "SearchResults"
+  >;
 
 type Ride = {
   id: string;
@@ -60,1394 +58,901 @@ type Ride = {
 
   driverName: string;
   vehicle: string;
+
+  similarity: number;
 };
 
-
 export default function SearchResultsScreen() {
-
   const navigation =
     useNavigation<NavigationProp>();
 
+  const route =
+    useRoute<SearchResultsRouteProp>();
 
-  const [rides, setRides] =
-    useState<Ride[]>([]);
+  // ==========================================
+  // GET SEARCH VALUES FROM RIDER HOME
+  // ==========================================
 
-  const [loading, setLoading] =
-    useState(true);
+  const {
+    pickup,
+    destination,
+    date,
+    time,
+    passengers,
+  } = route.params;
 
+  console.log("SEARCH RESULTS RECEIVED:", {
+    pickup,
+    destination,
+    date,
+    time,
+    passengers,
+  });
 
-  const [search, setSearch] =
-    useState("");
+  // ==========================================
+  // STATE
+  // ==========================================
 
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [priceFilter, setPriceFilter] =
-    useState("All");
-
-  const [genderFilter, setGenderFilter] =
-    useState("All");
-
-  const [seatFilter, setSeatFilter] =
-    useState("All");
-
-
-  const [priceVisible, setPriceVisible] =
-    useState(false);
-
-  const [genderVisible, setGenderVisible] =
-    useState(false);
-
-  const [seatVisible, setSeatVisible] =
-    useState(false);
-
-
-  // ==================================================
-  // LOAD RIDE OFFERS FROM SUPABASE
-  // ==================================================
+  // ==========================================
+  // LOAD RIDES FROM SUPABASE
+  // ==========================================
 
   useEffect(() => {
-
-    const loadRides = async () => {
-
-      try {
-
-        setLoading(true);
-
-
-        const {
-          data,
-          error,
-        } = await supabase
-          .from("rides")
-          .select(`
-            id,
-            driver_id,
-            pickup_location,
-            destination,
-            ride_date,
-            departure_time,
-            available_seats,
-            fare,
-            notes,
-            status
-          `)
-          .eq("status", "requested")
-          .order(
-            "created_at",
-            {
-              ascending: false,
-            }
-          );
-
-
-        if (error) {
-
-          console.error(
-            "Error loading rides:",
-            error.message
-          );
-
-          setRides([]);
-
-          return;
-        }
-
-
-        if (!data || data.length === 0) {
-
-          setRides([]);
-
-          return;
-        }
-
-
-        // ============================================
-        // GET DRIVER IDS
-        // ============================================
-
-        const driverIds =
-          data.map(
-            (ride) => ride.driver_id
-          );
-
-
-        // ============================================
-        // GET DRIVER INFORMATION
-        // ============================================
-
-        const {
-          data: driverProfiles,
-          error: driverError,
-        } = await supabase
-          .from("driver_profiles")
-          .select(`
-            id,
-            vehicle_make,
-            vehicle_model
-          `)
-          .in(
-            "id",
-            driverIds
-          );
-
-
-        if (driverError) {
-
-          console.error(
-            "Error loading driver profiles:",
-            driverError.message
-          );
-
-        }
-
-
-        // ============================================
-        // GET USER PROFILES
-        // ============================================
-
-        const {
-          data: profiles,
-          error: profileError,
-        } = await supabase
-          .from("profiles")
-          .select(`
-            id,
-            first_name,
-            last_name
-          `)
-          .in(
-            "id",
-            driverIds
-          );
-
-
-        if (profileError) {
-
-          console.error(
-            "Error loading profiles:",
-            profileError.message
-          );
-
-        }
-
-
-        // ============================================
-        // COMBINE RIDE + DRIVER INFORMATION
-        // ============================================
-
-        const formattedRides: Ride[] =
-          data.map((ride) => {
-
-            const driverProfile =
-              driverProfiles?.find(
-                (driver) =>
-                  driver.id === ride.driver_id
-              );
-
-
-            const profile =
-              profiles?.find(
-                (profile) =>
-                  profile.id === ride.driver_id
-              );
-
-
-            const driverName =
-              profile
-                ? `${profile.first_name} ${profile.last_name}`
-                : "Driver";
-
-
-            const vehicle =
-              driverProfile
-                ? `${driverProfile.vehicle_make} ${driverProfile.vehicle_model}`
-                : "Vehicle not available";
-
-
-            return {
-
-              id: ride.id,
-
-              driver_id:
-                ride.driver_id,
-
-              pickup_location:
-                ride.pickup_location,
-
-              destination:
-                ride.destination,
-
-              ride_date:
-                ride.ride_date,
-
-              departure_time:
-                ride.departure_time,
-
-              available_seats:
-                ride.available_seats,
-
-              fare:
-                ride.fare,
-
-              notes:
-                ride.notes,
-
-              status:
-                ride.status,
-
-              driverName:
-                driverName,
-
-              vehicle:
-                vehicle,
-
-            };
-
-          });
-
-
-        setRides(
-          formattedRides
-        );
-
-
-      } catch (error) {
-
-        console.error(
-          "Unexpected error loading rides:",
-          error
-        );
-
-        setRides([]);
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    };
-
-
     loadRides();
-
   }, []);
 
+  const loadRides = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  // ==================================================
-  // FILTER RIDES
-  // ==================================================
+      console.log("LOADING RIDES FROM SUPABASE...");
 
-  const filteredRides =
-    useMemo(() => {
+      const {
+        data,
+        error: ridesError,
+      } = await supabase
+        .from("rides")
+        .select(`
+          id,
+          driver_id,
+          pickup_location,
+          destination,
+          ride_date,
+          departure_time,
+          available_seats,
+          fare,
+          notes,
+          status
+        `)
+        .order("created_at", {
+          ascending: false,
+        });
 
-      return rides.filter(
-        (ride) => {
+      if (ridesError) {
+        console.log(
+          "SUPABASE RIDE ERROR:",
+          ridesError
+        );
 
-          const searchText =
-            search.toLowerCase();
+        setError(ridesError.message);
+        return;
+      }
 
-
-          const searchMatch =
-            ride.driverName
-              .toLowerCase()
-              .includes(searchText) ||
-
-            ride.vehicle
-              .toLowerCase()
-              .includes(searchText) ||
-
-            ride.pickup_location
-              .toLowerCase()
-              .includes(searchText) ||
-
-            ride.destination
-              .toLowerCase()
-              .includes(searchText);
-
-
-          let priceMatch = true;
-
-
-          if (
-            priceFilter ===
-            "Under R100"
-          ) {
-
-            priceMatch =
-              ride.fare <= 100;
-
-          }
-
-
-          if (
-            priceFilter ===
-            "Under R150"
-          ) {
-
-            priceMatch =
-              ride.fare <= 150;
-
-          }
-
-
-          if (
-            priceFilter ===
-            "Under R200"
-          ) {
-
-            priceMatch =
-              ride.fare <= 200;
-
-          }
-
-
-          let seatMatch = true;
-
-
-          if (
-            seatFilter === "1+"
-          ) {
-
-            seatMatch =
-              ride.available_seats >= 1;
-
-          }
-
-
-          if (
-            seatFilter === "2+"
-          ) {
-
-            seatMatch =
-              ride.available_seats >= 2;
-
-          }
-
-
-          if (
-            seatFilter === "3+"
-          ) {
-
-            seatMatch =
-              ride.available_seats >= 3;
-
-          }
-
-
-          if (
-            seatFilter === "4+"
-          ) {
-
-            seatMatch =
-              ride.available_seats >= 4;
-
-          }
-
-
-          /*
-           * Gender filtering is temporarily
-           * not applied because gender is not
-           * currently stored in the database.
-           */
-
-
-          return (
-            searchMatch &&
-            priceMatch &&
-            seatMatch
-          );
-
-        }
+      console.log(
+        "RIDES FROM SUPABASE:",
+        data
       );
 
+      if (!data || data.length === 0) {
+        console.log("NO RIDES FOUND");
+
+        setRides([]);
+        return;
+      }
+
+      // ==========================================
+      // GET DRIVER NAMES
+      // ==========================================
+
+      const driverIds = [
+        ...new Set(
+          data.map(
+            (ride) => ride.driver_id
+          )
+        ),
+      ];
+
+      const {
+        data: profiles,
+        error: profilesError,
+      } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", driverIds);
+
+      if (profilesError) {
+        console.log(
+          "PROFILE ERROR:",
+          profilesError
+        );
+      }
+
+      // ==========================================
+      // FORMAT RIDES
+      // ==========================================
+
+      const formattedRides: Ride[] =
+        data.map((ride) => {
+          const driver =
+            profiles?.find(
+              (profile) =>
+                profile.id ===
+                ride.driver_id
+            );
+
+          const driverName =
+            driver
+              ? `${driver.first_name || ""} ${
+                  driver.last_name || ""
+                }`.trim()
+              : "Driver";
+
+          return {
+            ...ride,
+
+            available_seats:
+              Number(
+                ride.available_seats
+              ),
+
+            fare:
+              Number(ride.fare),
+
+            driverName,
+
+            vehicle: "Vehicle",
+
+            similarity: 0,
+          };
+        });
+
+      console.log(
+        "FORMATTED RIDES:",
+        formattedRides
+      );
+
+      setRides(formattedRides);
+    } catch (err) {
+      console.log(
+        "LOAD RIDES ERROR:",
+        err
+      );
+
+      setError(
+        "Something went wrong while loading rides."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // TEXT SIMILARITY
+  // ==========================================
+
+  const normaliseText = (
+    value: string
+  ) => {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s]/g, "");
+  };
+
+  const calculateTextSimilarity = (
+    searchValue: string,
+    rideValue: string
+  ) => {
+    if (!searchValue.trim()) {
+      return 0;
+    }
+
+    if (!rideValue.trim()) {
+      return 0;
+    }
+
+    const search =
+      normaliseText(searchValue);
+
+    const ride =
+      normaliseText(rideValue);
+
+    // Exact match
+    if (search === ride) {
+      return 100;
+    }
+
+    // One contains the other
+    if (
+      ride.includes(search) ||
+      search.includes(ride)
+    ) {
+      return 90;
+    }
+
+    const searchWords =
+      search.split(/\s+/);
+
+    const rideWords =
+      ride.split(/\s+/);
+
+    let matches = 0;
+
+    searchWords.forEach(
+      (searchWord) => {
+        const found =
+          rideWords.some(
+            (rideWord) =>
+              rideWord.includes(
+                searchWord
+              ) ||
+              searchWord.includes(
+                rideWord
+              )
+          );
+
+        if (found) {
+          matches++;
+        }
+      }
+    );
+
+    if (searchWords.length === 0) {
+      return 0;
+    }
+
+    return Math.round(
+      (matches /
+        searchWords.length) *
+        80
+    );
+  };
+
+  // ==========================================
+  // DATE SIMILARITY
+  // ==========================================
+
+  const calculateDateSimilarity = (
+    searchDate: string,
+    rideDate: string
+  ) => {
+    if (!searchDate.trim()) {
+      return 0;
+    }
+
+    if (!rideDate) {
+      return 0;
+    }
+
+    if (
+      searchDate.trim() ===
+      rideDate.trim()
+    ) {
+      return 100;
+    }
+
+    return 0;
+  };
+
+  // ==========================================
+  // TIME SIMILARITY
+  // ==========================================
+
+  const calculateTimeSimilarity = (
+    searchTime: string,
+    rideTime: string
+  ) => {
+    if (!searchTime.trim()) {
+      return 0;
+    }
+
+    if (!rideTime) {
+      return 0;
+    }
+
+    if (
+      searchTime.trim() ===
+      rideTime.trim()
+    ) {
+      return 100;
+    }
+
+    return 0;
+  };
+
+  // ==========================================
+  // PASSENGER SIMILARITY
+  // ==========================================
+
+  const calculatePassengerSimilarity = (
+    searchPassengers: string,
+    availableSeats: number
+  ) => {
+    if (!searchPassengers.trim()) {
+      return 0;
+    }
+
+    const requested =
+      Number(searchPassengers);
+
+    if (
+      !requested ||
+      requested <= 0
+    ) {
+      return 0;
+    }
+
+    if (
+      availableSeats >= requested
+    ) {
+      return 100;
+    }
+
+    return Math.max(
+      0,
+      Math.round(
+        (availableSeats /
+          requested) *
+          100
+      )
+    );
+  };
+
+  // ==========================================
+  // CALCULATE MATCH
+  // ==========================================
+
+  const calculateSimilarity = (
+    ride: Ride
+  ) => {
+    const scores: {
+      score: number;
+      weight: number;
+    }[] = [];
+
+    if (pickup.trim()) {
+      scores.push({
+        score:
+          calculateTextSimilarity(
+            pickup,
+            ride.pickup_location
+          ),
+        weight: 30,
+      });
+    }
+
+    if (destination.trim()) {
+      scores.push({
+        score:
+          calculateTextSimilarity(
+            destination,
+            ride.destination
+          ),
+        weight: 30,
+      });
+    }
+
+    if (date.trim()) {
+      scores.push({
+        score:
+          calculateDateSimilarity(
+            date,
+            ride.ride_date
+          ),
+        weight: 15,
+      });
+    }
+
+    if (time.trim()) {
+      scores.push({
+        score:
+          calculateTimeSimilarity(
+            time,
+            ride.departure_time
+          ),
+        weight: 15,
+      });
+    }
+
+    if (passengers.trim()) {
+      scores.push({
+        score:
+          calculatePassengerSimilarity(
+            passengers,
+            ride.available_seats
+          ),
+        weight: 10,
+      });
+    }
+
+    if (scores.length === 0) {
+      return 0;
+    }
+
+    const totalWeight =
+      scores.reduce(
+        (total, item) =>
+          total + item.weight,
+        0
+      );
+
+    const totalScore =
+      scores.reduce(
+        (total, item) =>
+          total +
+          item.score *
+            item.weight,
+        0
+      );
+
+    return Math.round(
+      totalScore /
+        totalWeight
+    );
+  };
+
+  // ==========================================
+  // APPLY MATCHING TO RIDES
+  // ==========================================
+
+  const matchedRides =
+    useMemo(() => {
+      return rides
+        .map((ride) => ({
+          ...ride,
+          similarity:
+            calculateSimilarity(
+              ride
+            ),
+        }))
+        .sort(
+          (a, b) =>
+            b.similarity -
+            a.similarity
+        );
     }, [
       rides,
-      search,
-      priceFilter,
-      genderFilter,
-      seatFilter,
+      pickup,
+      destination,
+      date,
+      time,
+      passengers,
     ]);
 
-
-  // ==================================================
-  // FORMAT DATE
-  // ==================================================
-
-  const formatDate = (
-    date: string
-  ) => {
-
-    if (!date) {
-      return "";
-    }
-
-
-    const parts =
-      date.split("-");
-
-
-    if (parts.length !== 3) {
-      return date;
-    }
-
-
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-
-  };
-
-
-  // ==================================================
-  // FORMAT TIME
-  // ==================================================
-
-  const formatTime = (
-    time: string
-  ) => {
-
-    if (!time) {
-      return "";
-    }
-
-
-    const parts =
-      time.split(":");
-
-
-    if (parts.length < 2) {
-      return time;
-    }
-
-
-    let hour =
-      Number(parts[0]);
-
-    const minute =
-      parts[1];
-
-
-    const period =
-      hour >= 12
-        ? "PM"
-        : "AM";
-
-
-    hour =
-      hour % 12 || 12;
-
-
-    return `${hour}:${minute} ${period}`;
-
-  };
-
-
-  // ==================================================
-  // RENDER RIDE
-  // ==================================================
-
-  const renderRide = ({
-    item,
-  }: {
-    item: Ride;
-  }) => (
-
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.9}
-      onPress={() =>
-        navigation.navigate(
-          "RideDetails"
-        )
-      }
-    >
-
-      <Image
-        source={{
-          uri:
-            "https://placehold.co/100x100",
-        }}
-        style={styles.avatar}
-      />
-
-
-      <View style={styles.cardInfo}>
-
-        {/* DRIVER */}
-
-        <Text
-          style={styles.driverName}
-        >
-          {item.driverName}
-        </Text>
-
-
-        {/* VEHICLE */}
-
-        <View style={styles.detailRow}>
-
-          <Ionicons
-            name="car-outline"
-            size={16}
-            color={
-              Colors.textSecondary
-            }
-          />
-
-          <Text
-            style={styles.detail}
-          >
-            {item.vehicle}
-          </Text>
-
-        </View>
-
-
-        {/* PICKUP */}
-
-        <View style={styles.detailRow}>
-
-          <Ionicons
-            name="location-outline"
-            size={16}
-            color={
-              Colors.textSecondary
-            }
-          />
-
-          <Text
-            style={styles.detail}
-            numberOfLines={1}
-          >
-            {item.pickup_location}
-          </Text>
-
-        </View>
-
-
-        {/* DESTINATION */}
-
-        <View style={styles.detailRow}>
-
-          <Ionicons
-            name="flag-outline"
-            size={16}
-            color={
-              Colors.textSecondary
-            }
-          />
-
-          <Text
-            style={styles.detail}
-            numberOfLines={1}
-          >
-            {item.destination}
-          </Text>
-
-        </View>
-
-
-        {/* DATE */}
-
-        <View style={styles.detailRow}>
-
-          <Ionicons
-            name="calendar-outline"
-            size={16}
-            color={
-              Colors.textSecondary
-            }
-          />
-
-          <Text
-            style={styles.detail}
-          >
-            {formatDate(
-              item.ride_date
-            )}
-          </Text>
-
-        </View>
-
-
-        {/* TIME */}
-
-        <View style={styles.detailRow}>
-
-          <Ionicons
-            name="time-outline"
-            size={16}
-            color={
-              Colors.textSecondary
-            }
-          />
-
-          <Text
-            style={styles.detail}
-          >
-            {formatTime(
-              item.departure_time
-            )}
-          </Text>
-
-        </View>
-
-
-        {/* SEATS */}
-
-        <View style={styles.detailRow}>
-
-          <Ionicons
-            name="people-outline"
-            size={16}
-            color={
-              Colors.textSecondary
-            }
-          />
-
-          <Text
-            style={styles.detail}
-          >
-            {item.available_seats} Seats
-          </Text>
-
-        </View>
-
-
-        {/* PRICE + BUTTON */}
-
-        <View
-          style={styles.bottomRow}
-        >
-
-          <Text
-            style={styles.price}
-          >
-            R{item.fare}
-          </Text>
-
-
-          <TouchableOpacity
-            style={styles.bookButton}
-            onPress={(e) => {
-
-              e.stopPropagation();
-
-              navigation.navigate(
-                "RideDetails"
-              );
-
-            }}
-            activeOpacity={0.8}
-          >
-
-            <Text
-              style={styles.bookButtonText}
-            >
-              View Ride
-            </Text>
-
-
-            <Ionicons
-              name="arrow-forward"
-              size={17}
-              color={
-                Colors.white
-              }
-            />
-
-          </TouchableOpacity>
-
-        </View>
-
-      </View>
-
-    </TouchableOpacity>
-
-  );
-
-
-  // ==================================================
+  // ==========================================
   // LOADING
-  // ==================================================
+  // ==========================================
 
   if (loading) {
-
     return (
-
       <SafeAreaView
         style={styles.container}
       >
-
         <View
-          style={styles.loadingContainer}
+          style={styles.center}
         >
-
           <ActivityIndicator
             size="large"
-            color={
-              Colors.rider
-            }
+            color={Colors.rider}
           />
 
           <Text
             style={styles.loadingText}
           >
-            Loading available rides...
+            Finding available rides...
           </Text>
-
         </View>
-
       </SafeAreaView>
-
     );
-
   }
 
+  // ==========================================
+  // ERROR
+  // ==========================================
 
-  // ==================================================
-  // SCREEN
-  // ==================================================
+  if (error) {
+    return (
+      <SafeAreaView
+        style={styles.container}
+      >
+        <View
+          style={styles.center}
+        >
+          <Text
+            style={styles.errorText}
+          >
+            {error}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={loadRides}
+          >
+            <Text
+              style={
+                styles.retryButtonText
+              }
+            >
+              Try Again
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ==========================================
+  // DISPLAY RESULTS
+  // ==========================================
 
   return (
-
-    <SafeAreaView
-      style={styles.container}
+   <SafeAreaView style={styles.container}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
     >
 
-      <FlatList
-        data={filteredRides}
-        keyExtractor={(item) =>
-          item.id
-        }
-        renderItem={
-          renderRide
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
-        contentContainerStyle={
-          styles.listContent
-        }
+      {/* Back Button */}
 
-        ListHeaderComponent={
-          <>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name="arrow-back"
+          size={26}
+          color={Colors.primary}
+        />
+      </TouchableOpacity>
+        
+        <View style={styles.header}>
+          <Text
+            style={styles.heading}
+          >
+            Search Results
+          </Text>
 
-            {/* BACK BUTTON */}
+          <Text
+            style={styles.subHeading}
+          >
+            Rides matching your search
+          </Text>
+        </View>
 
-            <TouchableOpacity
-              style={
-                styles.backButton
-              }
-              onPress={() =>
-                navigation.goBack()
-              }
-              activeOpacity={0.7}
-            >
+        {/* SEARCH VALUES */}
 
-              <Ionicons
-                name="arrow-back"
-                size={26}
-                color={
-                  Colors.primary
-                }
-              />
-
-            </TouchableOpacity>
-
-
-            {/* HEADER */}
-
-            <View
-              style={styles.header}
-            >
-
-              <Text
-                style={styles.heading}
-              >
-                Search Results
-              </Text>
-
-
-              <Text
-                style={styles.subHeading}
-              >
-                Find a ride that matches
-                your trip.
-              </Text>
-
-            </View>
-
-
-            {/* SEARCH */}
-
-            <View
-              style={
-                styles.searchContainer
-              }
-            >
-
-              <Ionicons
-                name="search"
-                size={21}
-                color={
-                  Colors.textSecondary
-                }
-              />
-
-
-              <TextInput
-                placeholder="Search driver or vehicle..."
-                value={search}
-                onChangeText={
-                  setSearch
-                }
-                style={
-                  styles.searchInput
-                }
-                placeholderTextColor="#999"
-              />
-
-            </View>
-
-
-            {/* FILTERS */}
-
-            <View
-              style={styles.filterRow}
-            >
-
-              <TouchableOpacity
-                style={
-                  styles.filterButton
-                }
-                onPress={() =>
-                  setPriceVisible(
-                    true
-                  )
-                }
-                activeOpacity={0.8}
-              >
-
-                <Ionicons
-                  name="cash-outline"
-                  size={17}
-                  color={
-                    Colors.primary
-                  }
-                />
-
-                <Text
-                  style={
-                    styles.filterText
-                  }
-                >
-                  {priceFilter}
-                </Text>
-
-              </TouchableOpacity>
-
-
-              <TouchableOpacity
-                style={
-                  styles.filterButton
-                }
-                onPress={() =>
-                  setGenderVisible(
-                    true
-                  )
-                }
-                activeOpacity={0.8}
-              >
-
-                <Ionicons
-                  name="person-outline"
-                  size={17}
-                  color={
-                    Colors.primary
-                  }
-                />
-
-                <Text
-                  style={
-                    styles.filterText
-                  }
-                >
-                  {genderFilter}
-                </Text>
-
-              </TouchableOpacity>
-
-
-              <TouchableOpacity
-                style={
-                  styles.filterButton
-                }
-                onPress={() =>
-                  setSeatVisible(
-                    true
-                  )
-                }
-                activeOpacity={0.8}
-              >
-
-                <Ionicons
-                  name="people-outline"
-                  size={17}
-                  color={
-                    Colors.primary
-                  }
-                />
-
-                <Text
-                  style={
-                    styles.filterText
-                  }
-                >
-                  {seatFilter}
-                </Text>
-
-              </TouchableOpacity>
-
-            </View>
-
-
-            {/* RESULTS COUNT */}
-
-            <Text
-              style={styles.results}
-            >
-
-              {filteredRides.length}{" "}
-
-              {filteredRides.length === 1
-                ? "Ride"
-                : "Rides"}{" "}
-
-              Found
-
-            </Text>
-
-          </>
-        }
-
-        ListEmptyComponent={
-
-          <View
+        <View
+          style={styles.searchSummary}
+        >
+          <Text
             style={
-              styles.emptyContainer
+              styles.searchSummaryTitle
             }
           >
+            Your Search
+          </Text>
 
-            <Ionicons
-              name="car-outline"
-              size={50}
-              color={
-                Colors.textSecondary
-              }
-            />
+          <Text
+            style={styles.searchText}
+          >
+            Pickup: {pickup || "Any"}
+          </Text>
 
+          <Text
+            style={styles.searchText}
+          >
+            Destination:{" "}
+            {destination || "Any"}
+          </Text>
+
+          <Text
+            style={styles.searchText}
+          >
+            Date: {date || "Any"}
+          </Text>
+
+          <Text
+            style={styles.searchText}
+          >
+            Time: {time || "Any"}
+          </Text>
+
+          <Text
+            style={styles.searchText}
+          >
+            Passengers:{" "}
+            {passengers || "Any"}
+          </Text>
+        </View>
+
+        {/* NO RIDES */}
+
+        {matchedRides.length === 0 ? (
+          <View
+            style={styles.emptyContainer}
+          >
             <Text
-              style={
-                styles.emptyTitle
-              }
+              style={styles.emptyTitle}
             >
-              No Rides Found
+              No rides available
             </Text>
 
-
             <Text
-              style={
-                styles.emptyText
-              }
+              style={styles.emptyText}
             >
               There are currently no
-              available ride offers
-              matching your search.
+              rides available.
             </Text>
-
           </View>
+        ) : (
+          matchedRides.map((ride) => (
+            <TouchableOpacity
+              key={ride.id}
+              style={styles.rideCard}
+              onPress={() =>
+                navigation.navigate(
+                  "RideDetails",
+                  {
+                    ride,
+                  }
+                )
+              }
+            >
+              <View
+                style={styles.matchContainer}
+              >
+                <Text
+                  style={styles.matchText}
+                >
+                  {ride.similarity}%
+                  Match
+                </Text>
+              </View>
 
-        }
+              <Text
+                style={styles.driverName}
+              >
+                {ride.driverName}
+              </Text>
 
-      />
+              <Text
+                style={styles.route}
+              >
+                {ride.pickup_location}
+              </Text>
 
+              <Text
+                style={styles.route}
+              >
+                → {ride.destination}
+              </Text>
 
-      {/* PRICE FILTER */}
+              <View
+                style={styles.infoRow}
+              >
+                <Text
+                  style={styles.infoText}
+                >
+                  Date:{" "}
+                  {ride.ride_date}
+                </Text>
 
-      <FilterModal
-        visible={
-          priceVisible
-        }
-        title="Filter by Price"
-        options={[
-          "All",
-          "Under R100",
-          "Under R150",
-          "Under R200",
-        ]}
-        selectedValue={
-          priceFilter
-        }
-        onSelect={
-          setPriceFilter
-        }
-        onClose={() =>
-          setPriceVisible(
-            false
-          )
-        }
-      />
+                <Text
+                  style={styles.infoText}
+                >
+                  Time:{" "}
+                  {ride.departure_time}
+                </Text>
+              </View>
 
+              <View
+                style={styles.infoRow}
+              >
+                <Text
+                  style={styles.infoText}
+                >
+                  Seats:{" "}
+                  {ride.available_seats}
+                </Text>
 
-      {/* GENDER FILTER */}
-
-      <FilterModal
-        visible={
-          genderVisible
-        }
-        title="Filter by Gender"
-        options={[
-          "All",
-          "Male",
-          "Female",
-        ]}
-        selectedValue={
-          genderFilter
-        }
-        onSelect={
-          setGenderFilter
-        }
-        onClose={() =>
-          setGenderVisible(
-            false
-          )
-        }
-      />
-
-
-      {/* SEAT FILTER */}
-
-      <FilterModal
-        visible={
-          seatVisible
-        }
-        title="Filter by Seats"
-        options={[
-          "All",
-          "1+",
-          "2+",
-          "3+",
-          "4+",
-        ]}
-        selectedValue={
-          seatFilter
-        }
-        onSelect={
-          setSeatFilter
-        }
-        onClose={() =>
-          setSeatVisible(
-            false
-          )
-        }
-      />
-
+                <Text
+                  style={styles.fare}
+                >
+                  R{ride.fare}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
-
   );
-
 }
 
-
-// ==================================================
+// ==========================================
 // STYLES
-// ==================================================
+// ==========================================
 
-const styles =
-  StyleSheet.create({
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor:
+      Colors.background,
+  },
 
-    container: {
-      flex: 1,
-      backgroundColor:
-        Colors.background,
-    },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 30,
+  },
 
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
 
-    listContent: {
-      paddingHorizontal: 20,
-      paddingTop: 10,
-      paddingBottom: 30,
-    },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: Colors.textSecondary,
+  },
 
+  errorText: {
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
+    marginBottom: 20,
+  },
 
-    loadingContainer: {
-      flex: 1,
-      justifyContent:
-        "center",
-      alignItems:
-        "center",
-    },
+  retryButton: {
+    backgroundColor: Colors.rider,
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
 
+  retryButtonText: {
+    color: Colors.white,
+    fontWeight: "700",
+  },
 
-    loadingText: {
-      marginTop: 12,
-      fontSize: 15,
-      color:
-        Colors.textSecondary,
-    },
+  header: {
+    marginBottom: 15,
+  },
 
+  heading: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
 
-    backButton: {
-      width: 45,
-      height: 45,
-      borderRadius: 23,
-      backgroundColor:
-        Colors.white,
-      justifyContent:
-        "center",
-      alignItems:
-        "center",
-      marginBottom: 18,
-      elevation: 3,
-    },
+  subHeading: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginTop: 5,
+  },
 
+  searchSummary: {
+    backgroundColor: Colors.white,
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E6EAF0",
+  },
 
-    header: {
-      marginBottom: 18,
-    },
+  searchSummaryTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 8,
+  },
 
+  searchText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
 
-    heading: {
-      fontSize: 30,
-      fontWeight: "700",
-      color:
-        Colors.primary,
-    },
+  emptyContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 15,
+    padding: 25,
+    alignItems: "center",
+  },
 
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 8,
+  },
 
-    subHeading: {
-      fontSize: 15,
-      color:
-        Colors.textSecondary,
-      marginTop: 5,
-    },
+  emptyText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: "center",
+  },
 
+  rideCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#E6EAF0",
+    elevation: 3,
+  },
 
-    searchContainer: {
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
-      backgroundColor:
-        Colors.white,
-      borderRadius: 15,
-      minHeight: 58,
-      paddingHorizontal: 15,
-      borderWidth: 1,
-      borderColor:
-        "#E6EAF0",
-      marginBottom: 15,
-    },
+  matchContainer: {
+    alignSelf: "flex-start",
+    backgroundColor: Colors.rider,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 12,
+  },
 
+  matchText: {
+    color: Colors.white,
+    fontSize: 13,
+    fontWeight: "700",
+  },
 
-    searchInput: {
-      flex: 1,
-      height: 55,
-      marginLeft: 10,
-      color:
-        Colors.textPrimary,
-      fontSize: 15,
-    },
+  driverName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 10,
+  },
 
+  route: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
 
-    filterRow: {
-      flexDirection:
-        "row",
-      justifyContent:
-        "space-between",
-      marginBottom: 20,
-      gap: 8,
-    },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
 
+  infoText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
 
-    filterButton: {
-      flex: 1,
-      minHeight: 44,
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
-      justifyContent:
-        "center",
-      backgroundColor:
-        Colors.white,
-      paddingHorizontal: 8,
-      borderRadius: 13,
-      borderWidth: 1,
-      borderColor:
-        "#E6EAF0",
-      elevation: 2,
-    },
-
-
-    filterText: {
-      color:
-        Colors.primary,
-      fontWeight:
-        "600",
-      fontSize: 13,
-      marginLeft: 5,
-    },
-
-
-    results: {
-      fontSize: 16,
-      fontWeight:
-        "600",
-      color:
-        Colors.textSecondary,
-      marginBottom: 15,
-    },
-
-
-    card: {
-      flexDirection:
-        "row",
-      backgroundColor:
-        Colors.white,
-      borderRadius: 20,
-      padding: 15,
-      marginBottom: 15,
-      alignItems:
-        "flex-start",
-      shadowColor:
-        Colors.shadow,
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity:
-        0.12,
-      shadowRadius: 5,
-      elevation: 4,
-    },
-
-
-    avatar: {
-      width: 75,
-      height: 75,
-      borderRadius: 38,
-      backgroundColor:
-        Colors.secondary,
-    },
-
-
-    cardInfo: {
-      flex: 1,
-      marginLeft: 14,
-    },
-
-
-    driverName: {
-      fontSize: 19,
-      fontWeight:
-        "700",
-      color:
-        Colors.primary,
-      marginBottom: 8,
-    },
-
-
-    detailRow: {
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
-      marginBottom: 5,
-    },
-
-
-    detail: {
-      flex: 1,
-      fontSize: 14,
-      color:
-        Colors.textSecondary,
-      marginLeft: 7,
-    },
-
-
-    bottomRow: {
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
-      justifyContent:
-        "space-between",
-      marginTop: 10,
-    },
-
-
-    price: {
-      fontSize: 21,
-      fontWeight:
-        "700",
-      color:
-        Colors.rider,
-    },
-
-
-    bookButton: {
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
-      justifyContent:
-        "center",
-      backgroundColor:
-        Colors.rider,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
-      borderRadius: 11,
-    },
-
-
-    bookButtonText: {
-      color:
-        Colors.white,
-      fontSize: 14,
-      fontWeight:
-        "700",
-      marginRight: 5,
-    },
-
-
-    emptyContainer: {
-      alignItems:
-        "center",
-      justifyContent:
-        "center",
-      paddingVertical: 60,
-      paddingHorizontal: 30,
-    },
-
-
-    emptyTitle: {
-      fontSize: 20,
-      fontWeight:
-        "700",
-      color:
-        Colors.primary,
-      marginTop: 15,
-    },
-
-
-    emptyText: {
-      fontSize: 14,
-      color:
-        Colors.textSecondary,
-      textAlign:
-        "center",
-      lineHeight: 21,
-      marginTop: 8,
-    },
-
-  });
+  fare: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: Colors.rider,
+  },
+  backButton: {
+  width: 45,
+  height: 45,
+  borderRadius: 23,
+  backgroundColor: Colors.white,
+  justifyContent: "center",
+  alignItems: "center",
+  marginBottom: 15,
+  elevation: 3,
+},
+});
