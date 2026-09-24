@@ -3,38 +3,27 @@ import React, {
 } from "react";
 
 import {
-  SafeAreaView,
-  View,
-  Text,
+  Alert,
+  ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Alert,
+  View,
 } from "react-native";
 
-import {
-  Ionicons,
-} from "@expo/vector-icons";
-
-import {
-  useNavigation,
-} from "@react-navigation/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import {
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
 
-import Colors from "../../constants/colors";
-
 import {
   RootStackParamList,
 } from "../../navigation/AppNavigator";
 
+import Colors from "../../constants/colors";
 
-// ======================================================
-// NAVIGATION TYPE
-// ======================================================
 
 type NavigationProp =
   NativeStackNavigationProp<
@@ -43,1057 +32,740 @@ type NavigationProp =
   >;
 
 
-// ======================================================
-// RIDER HOME SCREEN
-// ======================================================
-
-export default function RiderHomeScreen() {
-
-  const navigation =
-    useNavigation<NavigationProp>();
+type Props = {
+  navigation: NavigationProp;
+};
 
 
-  // ======================================================
-  // SEARCH FORM
-  // ======================================================
+export default function RiderHomeScreen({
+  navigation,
+}: Props) {
 
-  const [
-    pickup,
-    setPickup,
-  ] = useState("");
+  const [pickup, setPickup] =
+    useState("");
 
-  const [
-    destination,
-    setDestination,
-  ] = useState("");
+  const [destination, setDestination] =
+    useState("");
 
-  const [
-    date,
-    setDate,
-  ] = useState("");
+  const [date, setDate] =
+    useState("");
 
-  const [
-    time,
-    setTime,
-  ] = useState("");
+  const [time, setTime] =
+    useState("");
 
-  const [
-    passengers,
-    setPassengers,
-  ] = useState("");
+  const [passengers, setPassengers] =
+    useState("1");
 
 
-  // ======================================================
+  // =====================================================
   // SEARCH RIDE
-  // ======================================================
+  // =====================================================
 
   const handleSearchRide = () => {
 
-    // -----------------------------------------------
-    // PICKUP
-    // -----------------------------------------------
-
-    if (!pickup.trim()) {
-
-      Alert.alert(
-        "Pickup Required",
-        "Please enter your pickup location."
-      );
-
-      return;
-    }
-
-
-    // -----------------------------------------------
-    // DESTINATION
-    // -----------------------------------------------
-
-    if (!destination.trim()) {
-
-      Alert.alert(
-        "Destination Required",
-        "Please enter your destination."
-      );
-
-      return;
-    }
-
-
-    // -----------------------------------------------
-    // DATE
-    // -----------------------------------------------
-
-    if (!date.trim()) {
-
-      Alert.alert(
-        "Date Required",
-        "Please enter your travel date."
-      );
-
-      return;
-    }
-
-
-    // -----------------------------------------------
-    // TIME
-    // -----------------------------------------------
-
-    if (!time.trim()) {
-
-      Alert.alert(
-        "Departure Time Required",
-        "Please enter your departure time."
-      );
-
-      return;
-    }
-
-
-    // -----------------------------------------------
-    // PASSENGERS
-    // -----------------------------------------------
-
-    if (!passengers.trim()) {
-
-      Alert.alert(
-        "Passengers Required",
-        "Please enter the number of passengers."
-      );
-
-      return;
-    }
-
-
-    // -----------------------------------------------
-    // CHECK PASSENGER NUMBER
-    // -----------------------------------------------
-
-    const passengerCount =
-      Number(passengers);
-
-
     if (
-      isNaN(passengerCount) ||
-      passengerCount < 1
+      !pickup.trim() ||
+      !destination.trim() ||
+      !date.trim() ||
+      !time.trim() ||
+      !passengers.trim()
     ) {
 
       Alert.alert(
-        "Invalid Passengers",
-        "Please enter a valid number of passengers."
+        "Missing Information",
+        "Please enter all ride details before searching."
       );
 
       return;
     }
 
-
-    // -----------------------------------------------
-    // SEARCH VALUES
-    // -----------------------------------------------
-
-    console.log(
-      "SEARCH VALUES:",
-      {
-        pickup,
-        destination,
-        date,
-        time,
-        passengers,
-      }
-    );
-
-
-    // -----------------------------------------------
-    // NAVIGATE TO SEARCH RESULTS
-    // -----------------------------------------------
 
     navigation.navigate(
       "SearchResults",
       {
-        pickup:
-          pickup.trim(),
-
-        destination:
-          destination.trim(),
-
-        date:
-          date.trim(),
-
-        time:
-          time.trim(),
-
-        passengers:
-          passengers.trim(),
+        pickup: pickup.trim(),
+        destination: destination.trim(),
+        date: date.trim(),
+        time: time.trim(),
+        passengers: passengers.trim(),
       }
     );
 
   };
 
 
-  // ======================================================
-  // UI
-  // ======================================================
-
   return (
 
-    <SafeAreaView
-      style={
-        styles.container
-      }
-    >
+    <View style={styles.container}>
 
-      {/* ================================================= */}
-      {/* MAP PLACEHOLDER */}
-      {/* ================================================= */}
-
-      <View
-        style={
-          styles.mapPlaceholder
+      <ScrollView
+        contentContainerStyle={
+          styles.scrollContent
         }
+        showsVerticalScrollIndicator={false}
       >
 
-        <View
-          style={
-            styles.mapIconContainer
-          }
-        >
+        {/* =====================================================
+            HEADER
+        ===================================================== */}
 
-          <Ionicons
-            name="map-outline"
-            size={42}
-            color={
-              Colors.rider
-            }
-          />
+        <View style={styles.header}>
+
+          <View>
+
+            <Text style={styles.greeting}>
+              Find your ride
+            </Text>
+
+            <Text style={styles.subtitle}>
+              Where would you like to go?
+            </Text>
+
+          </View>
+
+          <View style={styles.profileButton}>
+
+            <Ionicons
+              name="person"
+              size={22}
+              color={Colors.rider}
+            />
+
+          </View>
 
         </View>
 
 
-        <Text
-          style={
-            styles.mapTitle
-          }
-        >
-          Route Map
-        </Text>
+        {/* =====================================================
+            MAP / ROUTE AREA
+        ===================================================== */}
+
+        <View style={styles.mapContainer}>
+
+          <View style={styles.mapBackground}>
+
+            <View style={styles.mapLineOne} />
+
+            <View style={styles.mapLineTwo} />
+
+            <View style={styles.mapLineThree} />
 
 
-        <Text
-          style={
-            styles.mapText
-          }
-        >
-          Route and distance calculation
-          will be available once the map
-          is connected.
-        </Text>
-
-      </View>
-
-
-      {/* ================================================= */}
-      {/* BOTTOM CARD */}
-      {/* ================================================= */}
-
-      <View
-        style={
-          styles.bottomCard
-        }
-      >
-
-        <ScrollView
-
-          showsVerticalScrollIndicator={
-            false
-          }
-
-          contentContainerStyle={
-            styles.scrollContent
-          }
-
-        >
-
-          {/* ============================================= */}
-          {/* HEADER */}
-          {/* ============================================= */}
-
-          <View
-            style={
-              styles.header
-            }
-          >
-
-            <Text
-              style={
-                styles.heading
-              }
-            >
-              Search Ride
-            </Text>
-
-
-            <Text
-              style={
-                styles.subHeading
-              }
-            >
-              Find a ride that matches your trip.
-            </Text>
-
-          </View>
-
-
-          {/* ============================================= */}
-          {/* PICKUP LOCATION */}
-          {/* ============================================= */}
-
-          <Text
-            style={
-              styles.label
-            }
-          >
-            Pickup Location
-          </Text>
-
-
-          <View
-            style={
-              styles.inputContainer
-            }
-          >
-
-            <Ionicons
-              name="location-outline"
-              size={22}
-              color={
-                Colors.rider
-              }
-            />
-
-
-            <TextInput
-
-              style={
-                styles.input
-              }
-
-              placeholder="Enter pickup location"
-
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-
-              value={
-                pickup
-              }
-
-              onChangeText={
-                setPickup
-              }
-
-            />
-
-          </View>
-
-
-          {/* ============================================= */}
-          {/* DESTINATION */}
-          {/* ============================================= */}
-
-          <Text
-            style={
-              styles.label
-            }
-          >
-            Destination
-          </Text>
-
-
-          <View
-            style={
-              styles.inputContainer
-            }
-          >
-
-            <Ionicons
-              name="flag-outline"
-              size={22}
-              color={
-                Colors.rider
-              }
-            />
-
-
-            <TextInput
-
-              style={
-                styles.input
-              }
-
-              placeholder="Enter destination"
-
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-
-              value={
-                destination
-              }
-
-              onChangeText={
-                setDestination
-              }
-
-            />
-
-          </View>
-
-
-          {/* ============================================= */}
-          {/* ROUTE INFORMATION PLACEHOLDER */}
-          {/* ============================================= */}
-
-          <View
-            style={
-              styles.routeInfoCard
-            }
-          >
+            {/* PICKUP MARKER */}
 
             <View
-              style={
-                styles.routeInfoIcon
-              }
+              style={[
+                styles.mapMarker,
+                styles.pickupMarker,
+              ]}
             >
 
               <Ionicons
-                name="navigate-outline"
-                size={22}
-                color={
-                  Colors.rider
-                }
+                name="location"
+                size={20}
+                color="#FFFFFF"
+              />
+
+            </View>
+
+
+            {/* DESTINATION MARKER */}
+
+            <View
+              style={[
+                styles.mapMarker,
+                styles.destinationMarker,
+              ]}
+            >
+
+              <Ionicons
+                name="flag"
+                size={18}
+                color="#FFFFFF"
+              />
+
+            </View>
+
+          </View>
+
+
+          <View style={styles.mapOverlay}>
+
+            <Text style={styles.mapTitle}>
+              Plan your journey
+            </Text>
+
+            <Text style={styles.mapSubtitle}>
+              Search for available rides near you
+            </Text>
+
+          </View>
+
+        </View>
+
+
+        {/* =====================================================
+            SEARCH CARD
+        ===================================================== */}
+
+        <View style={styles.searchCard}>
+
+          <Text style={styles.searchTitle}>
+            Search for a ride
+          </Text>
+
+
+          {/* PICKUP */}
+
+          <View style={styles.inputContainer}>
+
+            <Ionicons
+              name="radio-button-on"
+              size={19}
+              color={Colors.rider}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Pickup location"
+              placeholderTextColor="#999"
+              value={pickup}
+              onChangeText={setPickup}
+            />
+
+          </View>
+
+
+          {/* DESTINATION */}
+
+          <View style={styles.inputContainer}>
+
+            <Ionicons
+              name="location-outline"
+              size={21}
+              color={Colors.rider}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Destination"
+              placeholderTextColor="#999"
+              value={destination}
+              onChangeText={setDestination}
+            />
+
+          </View>
+
+
+          {/* DATE + TIME */}
+
+          <View style={styles.row}>
+
+            <View
+              style={[
+                styles.inputContainer,
+                styles.halfInput,
+              ]}
+            >
+
+              <Ionicons
+                name="calendar-outline"
+                size={19}
+                color={Colors.rider}
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Date"
+                placeholderTextColor="#999"
+                value={date}
+                onChangeText={setDate}
               />
 
             </View>
 
 
             <View
-              style={
-                styles.routeInfoText
-              }
+              style={[
+                styles.inputContainer,
+                styles.halfInput,
+              ]}
             >
 
-              <Text
-                style={
-                  styles.routeInfoTitle
-                }
-              >
-                Route & Fare
-              </Text>
+              <Ionicons
+                name="time-outline"
+                size={20}
+                color={Colors.rider}
+              />
 
-
-              <Text
-                style={
-                  styles.routeInfoDescription
-                }
-              >
-                Distance and estimated fare
-                will be calculated once the
-                map is connected.
-              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Time"
+                placeholderTextColor="#999"
+                value={time}
+                onChangeText={setTime}
+              />
 
             </View>
 
           </View>
 
 
-          {/* ============================================= */}
-          {/* DATE */}
-          {/* ============================================= */}
-
-          <Text
-            style={
-              styles.label
-            }
-          >
-            Date
-          </Text>
-
-
-          <View
-            style={
-              styles.inputContainer
-            }
-          >
-
-            <Ionicons
-              name="calendar-outline"
-              size={22}
-              color={
-                Colors.rider
-              }
-            />
-
-
-            <TextInput
-
-              style={
-                styles.input
-              }
-
-              placeholder="Enter travel date"
-
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-
-              value={
-                date
-              }
-
-              onChangeText={
-                setDate
-              }
-
-            />
-
-          </View>
-
-
-          {/* ============================================= */}
-          {/* DEPARTURE TIME */}
-          {/* ============================================= */}
-
-          <Text
-            style={
-              styles.label
-            }
-          >
-            Departure Time
-          </Text>
-
-
-          <View
-            style={
-              styles.inputContainer
-            }
-          >
-
-            <Ionicons
-              name="time-outline"
-              size={22}
-              color={
-                Colors.rider
-              }
-            />
-
-
-            <TextInput
-
-              style={
-                styles.input
-              }
-
-              placeholder="Enter departure time"
-
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-
-              value={
-                time
-              }
-
-              onChangeText={
-                setTime
-              }
-
-            />
-
-          </View>
-
-
-          {/* ============================================= */}
           {/* PASSENGERS */}
-          {/* ============================================= */}
 
-          <Text
-            style={
-              styles.label
-            }
-          >
-            Passengers
-          </Text>
-
-
-          <View
-            style={
-              styles.inputContainer
-            }
-          >
+          <View style={styles.inputContainer}>
 
             <Ionicons
               name="people-outline"
-              size={22}
-              color={
-                Colors.rider
-              }
+              size={21}
+              color={Colors.rider}
             />
 
-
             <TextInput
-
-              style={
-                styles.input
-              }
-
+              style={styles.input}
               placeholder="Number of passengers"
-
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-
-              value={
-                passengers
-              }
-
-              onChangeText={
-                setPassengers
-              }
-
+              placeholderTextColor="#999"
               keyboardType="numeric"
-
+              value={passengers}
+              onChangeText={setPassengers}
             />
 
           </View>
 
 
-          {/* ============================================= */}
           {/* SEARCH BUTTON */}
-          {/* ============================================= */}
 
           <TouchableOpacity
-
-            style={
-              styles.searchButton
-            }
-
-            onPress={
-              handleSearchRide
-            }
-
+            style={styles.searchButton}
+            onPress={handleSearchRide}
+            activeOpacity={0.8}
           >
 
             <Ionicons
-              name="search-outline"
+              name="search"
               size={21}
-              color={
-                Colors.white
-              }
+              color="#FFFFFF"
             />
 
-
-            <Text
-              style={
-                styles.searchButtonText
-              }
-            >
+            <Text style={styles.searchButtonText}>
               Search Ride
             </Text>
 
           </TouchableOpacity>
 
-        </ScrollView>
+        </View>
 
-      </View>
 
-    </SafeAreaView>
+        {/* =====================================================
+            ROUTE / FARE INFORMATION
+        ===================================================== */}
+
+        <View style={styles.infoCard}>
+
+          <View style={styles.infoIcon}>
+
+            <Ionicons
+              name="car-outline"
+              size={23}
+              color={Colors.rider}
+            />
+
+          </View>
+
+          <View style={styles.infoContent}>
+
+            <Text style={styles.infoTitle}>
+              Find the right ride
+            </Text>
+
+            <Text style={styles.infoText}>
+              Compare available rides based on
+              your route, time and passenger needs.
+            </Text>
+
+          </View>
+
+        </View>
+
+      </ScrollView>
+
+    </View>
 
   );
 
 }
 
 
-// ======================================================
+// =====================================================
 // STYLES
-// ======================================================
+// =====================================================
 
-const styles =
-  StyleSheet.create({
+const styles = StyleSheet.create({
 
-    container: {
+  container: {
+    flex: 1,
+    backgroundColor:
+      Colors.background,
+  },
 
-      flex: 1,
 
-      backgroundColor:
-        Colors.background,
+  scrollContent: {
+    paddingBottom: 30,
+  },
 
+
+  // =====================================================
+  // HEADER
+  // =====================================================
+
+  header: {
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 18,
+
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+
+  greeting: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+
+
+  subtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: "#777",
+  },
+
+
+  profileButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+
+    backgroundColor: "#FFFFFF",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    elevation: 2,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
+  },
 
 
-    // ==================================================
-    // MAP PLACEHOLDER
-    // ==================================================
+  // =====================================================
+  // MAP
+  // =====================================================
 
-    mapPlaceholder: {
+  mapContainer: {
+    marginHorizontal: 18,
+    height: 235,
 
-      flex: 1,
+    borderRadius: 24,
 
-      backgroundColor:
-        Colors.background,
+    overflow: "hidden",
 
-      justifyContent:
-        "center",
+    backgroundColor: "#E8E8E8",
+  },
 
-      alignItems:
-        "center",
 
-      paddingHorizontal:
-        40,
+  mapBackground: {
+    flex: 1,
+    backgroundColor: "#DDE4DF",
+  },
 
+
+  mapLineOne: {
+    position: "absolute",
+
+    width: 330,
+    height: 3,
+
+    backgroundColor: "#FFFFFF",
+
+    top: 55,
+    left: -20,
+
+    transform: [
+      {
+        rotate: "12deg",
+      },
+    ],
+  },
+
+
+  mapLineTwo: {
+    position: "absolute",
+
+    width: 350,
+    height: 4,
+
+    backgroundColor: "#FFFFFF",
+
+    top: 135,
+    left: -25,
+
+    transform: [
+      {
+        rotate: "-15deg",
+      },
+    ],
+  },
+
+
+  mapLineThree: {
+    position: "absolute",
+
+    width: 280,
+    height: 3,
+
+    backgroundColor: "#FFFFFF",
+
+    top: 185,
+    left: 55,
+
+    transform: [
+      {
+        rotate: "8deg",
+      },
+    ],
+  },
+
+
+  mapMarker: {
+    position: "absolute",
+
+    width: 42,
+    height: 42,
+
+    borderRadius: 21,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    elevation: 4,
+  },
+
+
+  pickupMarker: {
+    backgroundColor: Colors.rider,
+
+    left: 65,
+    top: 65,
+  },
+
+
+  destinationMarker: {
+    backgroundColor: "#333",
+
+    right: 65,
+    bottom: 55,
+  },
+
+
+  mapOverlay: {
+    position: "absolute",
+
+    left: 18,
+    bottom: 18,
+    right: 18,
+
+    padding: 14,
+
+    borderRadius: 15,
+
+    backgroundColor:
+      "rgba(255,255,255,0.92)",
+  },
+
+
+  mapTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+
+
+  mapSubtitle: {
+    marginTop: 3,
+    fontSize: 12,
+    color: "#777",
+  },
+
+
+  // =====================================================
+  // SEARCH CARD
+  // =====================================================
+
+  searchCard: {
+    marginHorizontal: 18,
+    marginTop: 18,
+
+    padding: 18,
+
+    borderRadius: 22,
+
+    backgroundColor: "#FFFFFF",
+
+    elevation: 3,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 7,
+    shadowOffset: {
+      width: 0,
+      height: 3,
     },
+  },
 
 
-    mapIconContainer: {
+  searchTitle: {
+    fontSize: 19,
+    fontWeight: "700",
+    color: Colors.text,
 
-      width:
-        80,
+    marginBottom: 14,
+  },
 
-      height:
-        80,
 
-      borderRadius:
-        40,
+  inputContainer: {
+    minHeight: 52,
 
-      backgroundColor:
-        Colors.riderLight,
+    borderWidth: 1,
+    borderColor: "#E2E2E2",
 
-      justifyContent:
-        "center",
+    borderRadius: 14,
 
-      alignItems:
-        "center",
+    paddingHorizontal: 14,
 
-      marginBottom:
-        14,
+    flexDirection: "row",
+    alignItems: "center",
 
-    },
+    marginBottom: 12,
 
+    backgroundColor: "#FAFAFA",
+  },
 
-    mapTitle: {
 
-      fontSize:
-        20,
+  input: {
+    flex: 1,
 
-      fontWeight:
-        "700",
+    marginLeft: 10,
 
-      color:
-        Colors.textPrimary,
+    fontSize: 14,
 
-      marginBottom:
-        6,
+    color: Colors.text,
+  },
 
-    },
 
+  row: {
+    flexDirection: "row",
+    gap: 10,
+  },
 
-    mapText: {
 
-      fontSize:
-        13,
+  halfInput: {
+    flex: 1,
+  },
 
-      color:
-        Colors.textSecondary,
 
-      textAlign:
-        "center",
+  searchButton: {
+    minHeight: 54,
 
-      lineHeight:
-        19,
+    borderRadius: 15,
 
-    },
+    backgroundColor:
+      Colors.rider,
 
+    flexDirection: "row",
 
-    // ==================================================
-    // BOTTOM CARD
-    // ==================================================
+    alignItems: "center",
+    justifyContent: "center",
 
-    bottomCard: {
+    marginTop: 4,
 
-      flex: 1.25,
+    gap: 9,
+  },
 
-      backgroundColor:
-        Colors.white,
 
-      borderTopLeftRadius:
-        30,
+  searchButtonText: {
+    color: "#FFFFFF",
 
-      borderTopRightRadius:
-        30,
+    fontSize: 16,
 
-      paddingHorizontal:
-        24,
+    fontWeight: "700",
+  },
 
-      paddingTop:
-        20,
 
-    },
+  // =====================================================
+  // INFORMATION CARD
+  // =====================================================
 
+  infoCard: {
+    marginHorizontal: 18,
+    marginTop: 16,
 
-    scrollContent: {
+    padding: 16,
 
-      paddingBottom:
-        30,
+    borderRadius: 18,
 
-    },
+    backgroundColor: "#FFFFFF",
 
+    flexDirection: "row",
 
-    // ==================================================
-    // HEADER
-    // ==================================================
+    alignItems: "center",
 
-    header: {
+    elevation: 2,
+  },
 
-      marginBottom:
-        18,
 
-    },
+  infoIcon: {
+    width: 45,
+    height: 45,
 
+    borderRadius: 14,
 
-    heading: {
+    backgroundColor:
+      `${Colors.rider}15`,
 
-      fontSize:
-        24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-      fontWeight:
-        "700",
 
-      color:
-        Colors.textPrimary,
+  infoContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
 
-      marginBottom:
-        5,
 
-    },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.text,
+  },
 
 
-    subHeading: {
+  infoText: {
+    marginTop: 4,
 
-      fontSize:
-        14,
+    fontSize: 12,
 
-      color:
-        Colors.textSecondary,
+    lineHeight: 18,
 
-    },
+    color: "#777",
+  },
 
-
-    // ==================================================
-    // LABEL
-    // ==================================================
-
-    label: {
-
-      fontSize:
-        14,
-
-      fontWeight:
-        "600",
-
-      color:
-        Colors.textPrimary,
-
-      marginBottom:
-        8,
-
-      marginTop:
-        12,
-
-    },
-
-
-    // ==================================================
-    // INPUT
-    // ==================================================
-
-    inputContainer: {
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      backgroundColor:
-        Colors.background,
-
-      borderRadius:
-        15,
-
-      minHeight:
-        58,
-
-      paddingHorizontal:
-        16,
-
-    },
-
-
-    input: {
-
-      flex: 1,
-
-      fontSize:
-        15,
-
-      color:
-        Colors.textPrimary,
-
-      marginLeft:
-        10,
-
-    },
-
-
-    // ==================================================
-    // ROUTE INFORMATION
-    // ==================================================
-
-    routeInfoCard: {
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      backgroundColor:
-        Colors.riderLight,
-
-      borderRadius:
-        16,
-
-      padding:
-        15,
-
-      marginTop:
-        16,
-
-      borderWidth:
-        1,
-
-      borderColor:
-        Colors.secondary,
-
-    },
-
-
-    routeInfoIcon: {
-
-      width:
-        44,
-
-      height:
-        44,
-
-      borderRadius:
-        22,
-
-      backgroundColor:
-        Colors.white,
-
-      justifyContent:
-        "center",
-
-      alignItems:
-        "center",
-
-    },
-
-
-    routeInfoText: {
-
-      flex: 1,
-
-      marginLeft:
-        12,
-
-    },
-
-
-    routeInfoTitle: {
-
-      fontSize:
-        14,
-
-      fontWeight:
-        "700",
-
-      color:
-        Colors.textPrimary,
-
-      marginBottom:
-        3,
-
-    },
-
-
-    routeInfoDescription: {
-
-      fontSize:
-        12,
-
-      color:
-        Colors.textSecondary,
-
-      lineHeight:
-        17,
-
-    },
-
-
-    // ==================================================
-    // SEARCH BUTTON
-    // ==================================================
-
-    searchButton: {
-
-      height:
-        58,
-
-      borderRadius:
-        16,
-
-      backgroundColor:
-        Colors.rider,
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      marginTop:
-        22,
-
-    },
-
-
-    searchButtonText: {
-
-      color:
-        Colors.white,
-
-      fontSize:
-        16,
-
-      fontWeight:
-        "700",
-
-      marginLeft:
-        8,
-
-    },
-
-  });
+});
