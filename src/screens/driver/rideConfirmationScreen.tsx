@@ -1,319 +1,608 @@
 import React from "react";
+
 import {
   SafeAreaView,
-  ScrollView,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
+  Alert,
 } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import {
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+
+import {
+  RootStackParamList,
+} from "../../navigation/AppNavigator";
+
+import { supabase } from "../../lib/supabaseClient";
 
 import Colors from "../../constants/colors";
-import { RootStackParamList } from "../../navigation/AppNavigator";
 
-type NavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "RideConfirmation"
->;
 
-export default function RideConfirmationScreen() {
-  const navigation = useNavigation<NavigationProp>();
+type Props =
+  NativeStackScreenProps<
+    RootStackParamList,
+    "RideConfirmation"
+  >;
 
-  const ride = {
-    rider: "Sarah Williams",
-    pickup: "CPUT Bellville Campus",
-    destination: "Cape Town CBD",
-    pickupTime: "08:30 AM",
-    passengers: 2,
-    fare: "R120",
-    avatar: "https://placehold.co/150x150",
-  };
+
+export default function RideConfirmationScreen({
+  navigation,
+  route,
+}: Props) {
+
+  const {
+    rideId,
+  } = route.params;
+
+
+  const cancelRide =
+    async () => {
+
+      Alert.alert(
+        "Cancel Ride",
+        "Are you sure you want to cancel this ride offer?",
+        [
+          {
+            text: "No",
+            style: "cancel",
+          },
+
+          {
+            text: "Yes, Cancel",
+            style: "destructive",
+
+            onPress:
+              async () => {
+
+                try {
+
+                  const {
+                    error,
+                  } =
+                    await supabase
+                      .from("rides")
+                      .delete()
+                      .eq(
+                        "id",
+                        rideId
+                      );
+
+
+                  if (error) {
+
+                    console.error(
+                      "Cancel ride error:",
+                      error.message
+                    );
+
+                    Alert.alert(
+                      "Error",
+                      error.message
+                    );
+
+                    return;
+                  }
+
+
+                  navigation.navigate(
+                    "DriverHome"
+                  );
+
+                }
+
+                catch (error) {
+
+                  console.error(
+                    "Cancel ride error:",
+                    error
+                  );
+
+                  Alert.alert(
+                    "Error",
+                    "Could not cancel the ride."
+                  );
+
+                }
+
+              },
+          },
+        ]
+      );
+
+    };
+
+
+  const startTrip =
+    () => {
+
+      navigation.navigate(
+        "ActiveTrip"
+      );
+
+    };
+
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+
+    <SafeAreaView
+      style={
+        styles.container
+      }
+    >
+
+      <View
+        style={
+          styles.header
+        }
       >
-        <View style={styles.successCircle}>
-          <Ionicons
-            name="checkmark"
-            size={55}
-            color={Colors.white}
-          />
-        </View>
-
-        <Text style={styles.heading}>
-          Rider Accepted!
-        </Text>
-
-        <Text style={styles.subHeading}>
-          The ride has been confirmed.
-        </Text>
-
-        <Image
-          source={{ uri: ride.avatar }}
-          style={styles.avatar}
-        />
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            Rider Details
-          </Text>
-
-          <DetailRow
-            icon="person-outline"
-            title="Rider"
-            value={ride.rider}
-          />
-
-          <DetailRow
-            icon="people-outline"
-            title="Passengers"
-            value={ride.passengers.toString()}
-          />
-
-          <View style={styles.divider} />
-
-          <Text style={styles.sectionTitle}>
-            Trip Details
-          </Text>
-
-          <DetailRow
-            icon="location-outline"
-            title="Pickup"
-            value={ride.pickup}
-          />
-
-          <DetailRow
-            icon="flag-outline"
-            title="Destination"
-            value={ride.destination}
-          />
-
-          <DetailRow
-            icon="time-outline"
-            title="Pickup Time"
-            value={ride.pickupTime}
-          />
-
-          <View style={styles.divider} />
-
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>
-              Expected Earnings
-            </Text>
-
-            <Text style={styles.price}>
-              {ride.fare}
-            </Text>
-          </View>
-        </View>
 
         <TouchableOpacity
-  style={styles.primaryButton}
-  onPress={() => navigation.navigate("ActiveTrip")}
->
-          <Ionicons
-            name="car-sport"
-            size={20}
-            color={Colors.white}
-          />
-
-          <Text style={styles.primaryButtonText}>
-            Start Trip
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => navigation.navigate("DriverHome")}
+          onPress={() =>
+            navigation.goBack()
+          }
+          style={
+            styles.backButton
+          }
         >
-          <Text style={styles.secondaryButtonText}>
-            Back to Home
-          </Text>
+
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={
+              Colors.primary
+            }
+          />
+
         </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
 
-interface DetailProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  value: string;
-}
 
-function DetailRow({
-  icon,
-  title,
-  value,
-}: DetailProps) {
-  return (
-    <View style={styles.row}>
-      <View style={styles.left}>
-        <Ionicons
-          name={icon}
-          size={22}
-          color={Colors.driver}
+        <Text
+          style={
+            styles.headerTitle
+          }
+        >
+          Ride Confirmation
+        </Text>
+
+
+        <View
+          style={
+            styles.headerSpacer
+          }
         />
 
-        <Text style={styles.label}>
-          {title}
-        </Text>
       </View>
 
-      <Text style={styles.value}>
-        {value}
-      </Text>
-    </View>
+
+      <View
+        style={
+          styles.content
+        }
+      >
+
+        <View
+          style={
+            styles.successCircle
+          }
+        >
+
+          <Ionicons
+            name="checkmark"
+            size={45}
+            color="#FFFFFF"
+          />
+
+        </View>
+
+
+        <Text
+          style={
+            styles.title
+          }
+        >
+          Ride Offer Created!
+        </Text>
+
+
+        <Text
+          style={
+            styles.subtitle
+          }
+        >
+          Your ride offer has been successfully
+          created and is now available for riders.
+        </Text>
+
+
+        <View
+          style={
+            styles.infoCard
+          }
+        >
+
+          <View
+            style={
+              styles.infoRow
+            }
+          >
+
+            <Ionicons
+              name="location-outline"
+              size={22}
+              color={
+                Colors.primary
+              }
+            />
+
+            <View
+              style={
+                styles.infoText
+              }
+            >
+
+              <Text
+                style={
+                  styles.infoLabel
+                }
+              >
+                Ride ID
+              </Text>
+
+              <Text
+                style={
+                  styles.infoValue
+                }
+                numberOfLines={1}
+              >
+                {rideId}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.divider
+            }
+          />
+
+
+          <View
+            style={
+              styles.infoRow
+            }
+          >
+
+            <Ionicons
+              name="people-outline"
+              size={22}
+              color={
+                Colors.primary
+              }
+            />
+
+            <View
+              style={
+                styles.infoText
+              }
+            >
+
+              <Text
+                style={
+                  styles.infoLabel
+                }
+              >
+                Status
+              </Text>
+
+              <Text
+                style={
+                  styles.statusText
+                }
+              >
+                Ride Available
+              </Text>
+
+            </View>
+
+          </View>
+
+        </View>
+
+
+        <TouchableOpacity
+          style={
+            styles.startButton
+          }
+          onPress={
+            startTrip
+          }
+          activeOpacity={0.8}
+        >
+
+          <Ionicons
+            name="car-outline"
+            size={22}
+            color="#FFFFFF"
+          />
+
+          <Text
+            style={
+              styles.startButtonText
+            }
+          >
+            View Ride Details
+          </Text>
+
+        </TouchableOpacity>
+
+
+        <TouchableOpacity
+          style={
+            styles.cancelButton
+          }
+          onPress={
+            cancelRide
+          }
+          activeOpacity={0.8}
+        >
+
+          <Ionicons
+            name="close-circle-outline"
+            size={22}
+            color="#C0392B"
+          />
+
+          <Text
+            style={
+              styles.cancelButtonText
+            }
+          >
+            Cancel Ride
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
+
+    </SafeAreaView>
+
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
 
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+const styles =
+  StyleSheet.create({
 
-  successCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.success,
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    marginTop: 20,
-  },
+    container: {
+      flex: 1,
+      backgroundColor:
+        "#F7F7F7",
+    },
 
-  heading: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: Colors.primary,
-    textAlign: "center",
-    marginTop: 20,
-  },
+    header: {
+      height: 60,
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "space-between",
+      paddingHorizontal:
+        18,
+      backgroundColor:
+        "#FFFFFF",
+      borderBottomWidth:
+        1,
+      borderBottomColor:
+        "#EEEEEE",
+    },
 
-  subHeading: {
-    textAlign: "center",
-    color: Colors.textSecondary,
-    marginTop: 8,
-    marginBottom: 25,
-  },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
 
-  avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    alignSelf: "center",
-    marginBottom: 25,
-    backgroundColor: Colors.secondary,
-  },
+    headerTitle: {
+      fontSize: 19,
+      fontWeight: "700",
+      color:
+        Colors.primary,
+    },
 
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: 20,
-    padding: 20,
-    elevation: 4,
-  },
+    headerSpacer: {
+      width: 40,
+    },
 
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: Colors.primary,
-    marginBottom: 15,
-  },
+    content: {
+      flex: 1,
+      paddingHorizontal:
+        22,
+      alignItems:
+        "center",
+      paddingTop:
+        55,
+    },
 
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ECECEC",
-  },
+    successCircle: {
+      width: 90,
+      height: 90,
+      borderRadius: 45,
+      backgroundColor:
+        Colors.primary,
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+      marginBottom:
+        22,
+    },
 
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+    title: {
+      fontSize: 25,
+      fontWeight: "800",
+      color:
+        "#222222",
+      textAlign:
+        "center",
+    },
 
-  label: {
-    marginLeft: 10,
-    color: Colors.primary,
-  },
+    subtitle: {
+      fontSize: 15,
+      color:
+        "#666666",
+      textAlign:
+        "center",
+      lineHeight:
+        22,
+      marginTop:
+        10,
+      maxWidth:
+        330,
+    },
 
-  value: {
-    color: Colors.textSecondary,
-    fontWeight: "600",
-    maxWidth: "45%",
-    textAlign: "right",
-  },
+    infoCard: {
+      width: "100%",
+      backgroundColor:
+        "#FFFFFF",
+      borderRadius:
+        18,
+      padding:
+        18,
+      marginTop:
+        30,
 
-  divider: {
-    height: 1,
-    backgroundColor: "#E5E7EB",
-    marginVertical: 18,
-  },
+      shadowColor:
+        "#000000",
 
-  priceRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
 
-  priceLabel: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
+      shadowOpacity:
+        0.08,
 
-  price: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: Colors.driver,
-  },
+      shadowRadius:
+        6,
 
-  primaryButton: {
-    height: 58,
-    backgroundColor: Colors.driver,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 30,
-  },
+      elevation: 3,
+    },
 
-  primaryButtonText: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
+    infoRow: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+    },
 
-  secondaryButton: {
-    height: 58,
-    borderWidth: 2,
-    borderColor: Colors.driver,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 15,
-  },
+    infoText: {
+      flex: 1,
+      marginLeft:
+        12,
+    },
 
-  secondaryButtonText: {
-    color: Colors.driver,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-});
+    infoLabel: {
+      fontSize: 12,
+      color:
+        "#888888",
+      marginBottom:
+        3,
+    },
+
+    infoValue: {
+      fontSize: 13,
+      fontWeight:
+        "600",
+      color:
+        "#333333",
+    },
+
+    statusText: {
+      fontSize: 15,
+      fontWeight:
+        "700",
+      color:
+        Colors.primary,
+    },
+
+    divider: {
+      height: 1,
+      backgroundColor:
+        "#EEEEEE",
+      marginVertical:
+        16,
+    },
+
+    startButton: {
+      width: "100%",
+      height: 55,
+      borderRadius:
+        14,
+      backgroundColor:
+        Colors.primary,
+      flexDirection:
+        "row",
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+      marginTop:
+        25,
+    },
+
+    startButtonText: {
+      color:
+        "#FFFFFF",
+      fontSize: 16,
+      fontWeight:
+        "700",
+      marginLeft:
+        8,
+    },
+
+    cancelButton: {
+      width: "100%",
+      height: 52,
+      borderRadius:
+        14,
+      backgroundColor:
+        "#FFFFFF",
+      borderWidth:
+        1,
+      borderColor:
+        "#C0392B",
+      flexDirection:
+        "row",
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+      marginTop:
+        12,
+    },
+
+    cancelButtonText: {
+      color:
+        "#C0392B",
+      fontSize: 15,
+      fontWeight:
+        "700",
+      marginLeft:
+        8,
+    },
+
+  });

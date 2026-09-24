@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
-
+import React, { useCallback, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -11,32 +7,29 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  TextInput,
 } from "react-native";
-
 import { Ionicons } from "@expo/vector-icons";
-
-import { useNavigation } from "@react-navigation/native";
-
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../../navigation/AppNavigator";
-
 import Colors from "../../constants/colors";
-
 import { supabase } from "../../lib/supabaseClient";
 
 
 type NavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
-
 type Ride = {
   id: string;
+  driver_id: string;
   pickup_location: string;
   destination: string;
   ride_date: string;
   departure_time: string;
-  available_seats: number; 
+  available_seats: number;
   fare: number;
   notes: string | null;
   status: string;
@@ -48,131 +41,213 @@ export default function ActiveRideScreen() {
   const navigation =
     useNavigation<NavigationProp>();
 
+
   const [ride, setRide] =
     useState<Ride | null>(null);
 
   const [loading, setLoading] =
     useState(true);
 
+  const [rideDeleted, setRideDeleted] =
+    useState(false);
+
+
+  // ==================================================
+  // EDIT RIDE STATES
+  // ==================================================
+
+  const [showRideDetails, setShowRideDetails] =
+    useState(false);
+
+  const [pickup, setPickup] =
+    useState("");
+
+  const [destination, setDestination] =
+    useState("");
+
+  const [rideDate, setRideDate] =
+    useState("");
+
+  const [departureTime, setDepartureTime] =
+    useState("");
+
+  const [availableSeats, setAvailableSeats] =
+    useState("");
+
+  const [fare, setFare] =
+    useState("");
+
 
   // ==================================================
   // LOAD DRIVER'S RIDE
   // ==================================================
 
-  useEffect(() => {
+  const loadRide = async () => {
 
-    const loadRide = async () => {
+    if (rideDeleted) {
 
-      try {
+      setRide(null);
 
-        const {
-          data: {
-            user,
-          },
-          error: userError,
-        } =
-          await supabase.auth.getUser();
+      setLoading(false);
+
+      return;
+
+    }
 
 
-        if (userError || !user) {
+    try {
 
-          console.error(
-            "User error:",
-            userError?.message
-          );
-
-          Alert.alert(
-            "Error",
-            "Unable to identify the driver."
-          );
-
-          return;
-
-        }
+      const {
+        data: {
+          user,
+        },
+        error: userError,
+      } =
+        await supabase.auth.getUser();
 
 
-        const {
-          data,
-          error,
-        } =
-          await supabase
-            .from("rides")
-            .select(
-              `
-                id,
-                pickup_location,
-                destination,
-                ride_date,
-                departure_time,
-                available_seats,
-                fare,
-                notes,
-                status
-              `
-            )
-            .eq(
-              "driver_id",
-              user.id
-            )
-            .order(
-              "created_at",
-              {
-                ascending: false,
-              }
-            )
-            .limit(1)
-            .single();
-
-
-        if (error) {
-
-          if (
-            error.code === "PGRST116"
-          ) {
-
-            setRide(null);
-
-            return;
-
-          }
-
-
-          console.error(
-            "Ride loading error:",
-            error.message
-          );
-
-          Alert.alert(
-            "Error",
-            "Unable to load your ride."
-          );
-
-          return;
-
-        }
-
-
-        setRide(data);
-
-      } catch (error) {
+      if (
+        userError ||
+        !user
+      ) {
 
         console.error(
-          "Active ride error:",
-          error
+          "User error:",
+          userError?.message
         );
 
-      } finally {
+        setRide(null);
 
-        setLoading(false);
-
+        return;
       }
 
-    };
+
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from("rides")
+          .select(
+            `
+              id,
+              driver_id,
+              pickup_location,
+              destination,
+              ride_date,
+              departure_time,
+              available_seats,
+              fare,
+              notes,
+              status
+            `
+          )
+          .eq(
+            "driver_id",
+            user.id
+          )
+          .eq(
+            "status",
+            "available"
+          )
+          .order(
+            "created_at",
+            {
+              ascending: false,
+            }
+          )
+          .limit(1)
+          .single();
 
 
-    loadRide();
+      if (error) {
 
-  }, []);
+        if (
+          error.code === "PGRST116"
+        ) {
+
+          setRide(null);
+
+          return;
+        }
+
+
+        console.error(
+          "Ride loading error:",
+          error.message
+        );
+
+        Alert.alert(
+          "Error",
+          "Unable to load your ride."
+        );
+
+        return;
+      }
+
+
+      setRide(
+        data
+      );
+
+
+      setPickup(
+        data.pickup_location
+      );
+
+      setDestination(
+        data.destination
+      );
+
+      setRideDate(
+        data.ride_date
+      );
+
+      setDepartureTime(
+        data.departure_time
+      );
+
+      setAvailableSeats(
+        String(
+          data.available_seats
+        )
+      );
+
+      setFare(
+        String(
+          data.fare
+        )
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Active ride error:",
+        error
+      );
+
+    } finally {
+
+      setLoading(
+        false
+      );
+
+    }
+
+  };
+
+
+  // ==================================================
+  // REFRESH WHEN SCREEN GETS FOCUS
+  // ==================================================
+
+  useFocusEffect(
+    useCallback(() => {
+
+      loadRide();
+
+    }, [rideDeleted])
+  );
 
 
   // ==================================================
@@ -186,11 +261,15 @@ export default function ActiveRideScreen() {
     const parts =
       date.split("-");
 
+
     if (
       parts.length !== 3
     ) {
+
       return date;
+
     }
+
 
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
 
@@ -206,31 +285,43 @@ export default function ActiveRideScreen() {
   ) => {
 
     if (!time) {
+
       return time;
+
     }
+
 
     const parts =
       time.split(":");
 
+
     if (
       parts.length < 2
     ) {
+
       return time;
+
     }
 
+
     const hours =
-      Number(parts[0]);
+      Number(
+        parts[0]
+      );
 
     const minutes =
       parts[1];
+
 
     const period =
       hours >= 12
         ? "PM"
         : "AM";
 
+
     const formattedHour =
       hours % 12 || 12;
+
 
     return `${formattedHour}:${minutes} ${period}`;
 
@@ -238,24 +329,310 @@ export default function ActiveRideScreen() {
 
 
   // ==================================================
-  // LOADING
+  // UPDATE RIDE
+  // ==================================================
+
+  const updateRide = async () => {
+
+    if (!ride) {
+
+      return;
+
+    }
+
+
+    if (
+      !pickup.trim() ||
+      !destination.trim() ||
+      !rideDate.trim() ||
+      !departureTime.trim() ||
+      !availableSeats.trim() ||
+      !fare.trim()
+    ) {
+
+      Alert.alert(
+        "Missing Information",
+        "Please complete all ride information."
+      );
+
+      return;
+
+    }
+
+
+    const seats =
+      Number(
+        availableSeats
+      );
+
+    const rideFare =
+      Number(
+        fare
+      );
+
+
+    if (
+      !seats ||
+      seats <= 0
+    ) {
+
+      Alert.alert(
+        "Invalid Seats",
+        "Please enter a valid number of available seats."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      !rideFare ||
+      rideFare <= 0
+    ) {
+
+      Alert.alert(
+        "Invalid Fare",
+        "Please enter a valid fare per person."
+      );
+
+      return;
+
+    }
+
+
+    try {
+
+      const {
+        error,
+      } =
+        await supabase
+          .from("rides")
+          .update({
+
+            pickup_location:
+              pickup.trim(),
+
+            destination:
+              destination.trim(),
+
+            ride_date:
+              rideDate.trim(),
+
+            departure_time:
+              departureTime.trim(),
+
+            available_seats:
+              seats,
+
+            fare:
+              rideFare,
+
+          })
+          .eq(
+            "id",
+            ride.id
+          );
+
+
+      if (error) {
+
+        console.error(
+          "Ride update error:",
+          error.message
+        );
+
+        Alert.alert(
+          "Error",
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      setRide({
+
+        ...ride,
+
+        pickup_location:
+          pickup.trim(),
+
+        destination:
+          destination.trim(),
+
+        ride_date:
+          rideDate.trim(),
+
+        departure_time:
+          departureTime.trim(),
+
+        available_seats:
+          seats,
+
+        fare:
+          rideFare,
+
+      });
+
+
+      setShowRideDetails(
+        false
+      );
+
+
+      Alert.alert(
+        "Ride Updated",
+        "Your ride information has been updated successfully."
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Update ride error:",
+        error
+      );
+
+      Alert.alert(
+        "Error",
+        "Something went wrong while updating your ride."
+      );
+
+    }
+
+  };
+
+
+  // ==================================================
+  // DELETE RIDE
+  // ==================================================
+
+ const deleteRide = async () => {
+  if (!ride?.id) {
+    Alert.alert("Error", "No ride was selected.");
+    return;
+  }
+
+  try {
+    // Get the currently logged-in user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.log("USER ERROR:", userError);
+      Alert.alert("Error", "You are not logged in.");
+      return;
+    }
+
+    console.log("========== DELETE DEBUG ==========");
+    console.log("Logged-in user ID:", user.id);
+    console.log("Ride ID:", ride.id);
+    console.log("Ride driver ID:", ride.driver_id);
+    console.log("===================================");
+
+    // Check that the ride belongs to this driver
+    if (ride.driver_id !== user.id) {
+      Alert.alert(
+        "Delete Failed",
+        "This ride does not belong to the currently logged-in driver."
+      );
+      return;
+    }
+
+    const { error } = await supabase
+      .from("rides")
+      .delete()
+      .eq("id", ride.id);
+
+    console.log("DELETE ERROR:", error);
+
+    if (error) {
+      console.error("DELETE ERROR MESSAGE:", error.message);
+      console.error("DELETE ERROR DETAILS:", error.details);
+      console.error("DELETE ERROR HINT:", error.hint);
+
+      Alert.alert(
+        "Delete Failed",
+        error.message
+      );
+
+      return;
+    }
+
+    console.log("DELETE SUCCESSFUL");
+
+    // Remove it immediately from the frontend
+    setRide(null);
+    setRideDeleted(true);
+    setShowRideDetails(false);
+
+    setPickup("");
+    setDestination("");
+    setRideDate("");
+    setDepartureTime("");
+    setAvailableSeats("");
+    setFare("");
+
+    Alert.alert(
+      "Trip Deleted",
+      "Your trip has been deleted successfully."
+    );
+
+  } catch (error) {
+    console.error("DELETE CRASH:", error);
+
+    Alert.alert(
+      "Delete Failed",
+      "Something went wrong while deleting the trip."
+    );
+  }
+};
+
+  // ==================================================
+  // CREATE NEW RIDE
+  // ==================================================
+
+  const createNewRide = () => {
+
+    setRideDeleted(
+      false
+    );
+
+    navigation.navigate(
+      "CreateRideOffer"
+    );
+
+  };
+
+
+  // ==================================================
+  // LOADING SCREEN
   // ==================================================
 
   if (loading) {
 
     return (
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={styles.container}
+      >
 
-        <View style={styles.loadingContainer}>
+        <View
+          style={styles.loadingContainer}
+        >
 
           <ActivityIndicator
             size="large"
-            color={Colors.driver}
+            color={Colors.primary}
           />
 
-          <Text style={styles.loadingText}>
-            Loading ride activity...
+          <Text
+            style={styles.loadingText}
+          >
+            Loading your ride...
           </Text>
 
         </View>
@@ -267,94 +644,122 @@ export default function ActiveRideScreen() {
   }
 
 
+  // ==================================================
+  // MAIN SCREEN
+  // ==================================================
+
   return (
 
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
 
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
 
-        {/* ================= BACK BUTTON ================= */}
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() =>
-            navigation.navigate(
-              "DriverHome"
-            )
-          }
-          activeOpacity={0.7}
+        <Text
+          style={styles.title}
         >
-
-          <Ionicons
-            name="arrow-back"
-            size={28}
-            color={Colors.primary}
-          />
-
-        </TouchableOpacity>
-
-
-        {/* ================= HEADER ================= */}
-
-        <Text style={styles.heading}>
           Activity
         </Text>
 
-        <Text style={styles.subtitle}>
+        <Text
+          style={styles.subtitle}
+        >
           Manage your current ride activity.
         </Text>
 
 
-        {/* ================= CURRENT ACTIVITY ================= */}
+        {/* ==================================================
+            CURRENT RIDE
+        ================================================== */}
 
-        <View style={styles.card}>
+        <View
+          style={styles.card}
+        >
 
-          <View style={styles.iconContainer}>
+          <View
+            style={styles.cardHeader}
+          >
 
-            <Ionicons
-              name="car-outline"
-              size={42}
-              color={Colors.driver}
-            />
+            <View
+              style={styles.iconContainer}
+            >
+
+              <Ionicons
+                name="car-outline"
+                size={25}
+                color={Colors.primary}
+              />
+
+            </View>
+
+            <View
+              style={styles.headerTextContainer}
+            >
+
+              <Text
+                style={styles.cardTitle}
+              >
+                {ride
+                  ? "Ride Offer Active"
+                  : "No Active Ride"}
+              </Text>
+
+              <Text
+                style={styles.cardSubtitle}
+              >
+                {ride
+                  ? "Your ride offer is currently available."
+                  : "You currently do not have an active ride offer."}
+              </Text>
+
+            </View>
 
           </View>
 
+
+          {/* ==================================================
+              RIDE INFORMATION
+          ================================================== */}
 
           {ride ? (
 
             <>
 
-              <Text style={styles.title}>
-                Ride Offer Active
-              </Text>
+              <View
+                style={styles.routeContainer}
+              >
 
-
-              <Text style={styles.description}>
-                Your ride is available for riders to book.
-              </Text>
-
-
-              {/* ================= RIDE INFORMATION ================= */}
-
-              <View style={styles.rideInfo}>
-
-                {/* Pickup */}
-
-                <View style={styles.infoRow}>
+                <View
+                  style={styles.routeRow}
+                >
 
                   <Ionicons
                     name="location-outline"
                     size={20}
-                    color={Colors.driver}
+                    color={Colors.primary}
                   />
 
-                  <View style={styles.infoContent}>
+                  <View
+                    style={styles.routeTextContainer}
+                  >
 
-                    <Text style={styles.infoLabel}>
+                    <Text
+                      style={styles.routeLabel}
+                    >
                       Pickup
                     </Text>
 
-                    <Text style={styles.infoValue}>
+                    <Text
+                      style={styles.routeText}
+                    >
                       {ride.pickup_location}
                     </Text>
 
@@ -363,128 +768,35 @@ export default function ActiveRideScreen() {
                 </View>
 
 
-                {/* Destination */}
+                <View
+                  style={styles.routeLine}
+                />
 
-                <View style={styles.infoRow}>
+
+                <View
+                  style={styles.routeRow}
+                >
 
                   <Ionicons
                     name="flag-outline"
                     size={20}
-                    color={Colors.driver}
+                    color={Colors.primary}
                   />
 
-                  <View style={styles.infoContent}>
+                  <View
+                    style={styles.routeTextContainer}
+                  >
 
-                    <Text style={styles.infoLabel}>
+                    <Text
+                      style={styles.routeLabel}
+                    >
                       Destination
                     </Text>
 
-                    <Text style={styles.infoValue}>
+                    <Text
+                      style={styles.routeText}
+                    >
                       {ride.destination}
-                    </Text>
-
-                  </View>
-
-                </View>
-
-
-                {/* Date */}
-
-                <View style={styles.infoRow}>
-
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color={Colors.driver}
-                  />
-
-                  <View style={styles.infoContent}>
-
-                    <Text style={styles.infoLabel}>
-                      Date
-                    </Text>
-
-                    <Text style={styles.infoValue}>
-                      {formatDate(
-                        ride.ride_date
-                      )}
-                    </Text>
-
-                  </View>
-
-                </View>
-
-
-                {/* Departure */}
-
-                <View style={styles.infoRow}>
-
-                  <Ionicons
-                    name="time-outline"
-                    size={20}
-                    color={Colors.driver}
-                  />
-
-                  <View style={styles.infoContent}>
-
-                    <Text style={styles.infoLabel}>
-                      Departure
-                    </Text>
-
-                    <Text style={styles.infoValue}>
-                      {formatTime(
-                        ride.departure_time
-                      )}
-                    </Text>
-
-                  </View>
-
-                </View>
-
-
-                {/* Seats */}
-
-                <View style={styles.infoRow}>
-
-                  <Ionicons
-                    name="people-outline"
-                    size={20}
-                    color={Colors.driver}
-                  />
-
-                  <View style={styles.infoContent}>
-
-                    <Text style={styles.infoLabel}>
-                      Available Seats
-                    </Text>
-
-                    <Text style={styles.infoValue}>
-                      {ride.available_seats}
-                    </Text>
-
-                  </View>
-
-                </View>
-
-
-                {/* Price */}
-
-                <View style={styles.infoRow}>
-
-                  <Ionicons
-                    name="cash-outline"
-                    size={20}
-                    color={Colors.driver}
-                  />
-
-                  <View style={styles.infoContent}>
-
-                    <Text style={styles.infoLabel}>
-                      Price Per Rider
-                    </Text>
-
-                    <Text style={styles.infoValue}>
-                      R{ride.fare}
                     </Text>
 
                   </View>
@@ -494,7 +806,161 @@ export default function ActiveRideScreen() {
               </View>
 
 
-              {/* ================= VIEW REQUESTS ================= */}
+              {/* ==================================================
+                  RIDE DETAILS
+              ================================================== */}
+
+              <TouchableOpacity
+                style={styles.detailsButton}
+                onPress={() =>
+                  setShowRideDetails(
+                    !showRideDetails
+                  )
+                }
+                activeOpacity={0.8}
+              >
+
+                <Text
+                  style={styles.detailsButtonText}
+                >
+                  {showRideDetails
+                    ? "Hide Ride Details"
+                    : "View / Edit Ride Details"}
+                </Text>
+
+                <Ionicons
+                  name={
+                    showRideDetails
+                      ? "chevron-up"
+                      : "chevron-down"
+                  }
+                  size={20}
+                  color={Colors.primary}
+                />
+
+              </TouchableOpacity>
+
+
+              {showRideDetails && (
+
+                <View
+                  style={styles.rideDetails}
+                >
+
+                  <Text
+                    style={styles.inputLabel}
+                  >
+                    Pickup Location
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={pickup}
+                    onChangeText={setPickup}
+                    placeholder="Enter pickup location"
+                  />
+
+
+                  <Text
+                    style={styles.inputLabel}
+                  >
+                    Destination
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={destination}
+                    onChangeText={setDestination}
+                    placeholder="Enter destination"
+                  />
+
+
+                  <Text
+                    style={styles.inputLabel}
+                  >
+                    Ride Date
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={rideDate}
+                    onChangeText={setRideDate}
+                    placeholder="YYYY-MM-DD"
+                  />
+
+
+                  <Text
+                    style={styles.inputLabel}
+                  >
+                    Departure Time
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={departureTime}
+                    onChangeText={setDepartureTime}
+                    placeholder="HH:MM"
+                  />
+
+
+                  <Text
+                    style={styles.inputLabel}
+                  >
+                    Available Seats
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={availableSeats}
+                    onChangeText={setAvailableSeats}
+                    keyboardType="numeric"
+                    placeholder="Available seats"
+                  />
+
+
+                  <Text
+                    style={styles.inputLabel}
+                  >
+                    Fare Per Person
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={fare}
+                    onChangeText={setFare}
+                    keyboardType="numeric"
+                    placeholder="Fare"
+                  />
+
+
+                  <TouchableOpacity
+                    style={styles.updateButton}
+                    onPress={updateRide}
+                    activeOpacity={0.8}
+                  >
+
+                    <Ionicons
+                      name="save-outline"
+                      size={20}
+                      color={Colors.white}
+                    />
+
+                    <Text
+                      style={styles.updateButtonText}
+                    >
+                      Update Ride
+                    </Text>
+
+                  </TouchableOpacity>
+
+                </View>
+
+              )}
+
+
+              {/* ==================================================
+                  VIEW RIDE REQUESTS
+              ================================================== */}
 
               <TouchableOpacity
                 style={styles.button}
@@ -512,8 +978,35 @@ export default function ActiveRideScreen() {
                   color={Colors.white}
                 />
 
-                <Text style={styles.buttonText}>
+                <Text
+                  style={styles.buttonText}
+                >
                   View Ride Requests
+                </Text>
+
+              </TouchableOpacity>
+
+
+              {/* ==================================================
+                  DELETE RIDE
+              ================================================== */}
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={deleteRide}
+                activeOpacity={0.8}
+              >
+
+                <Ionicons
+                  name="trash-outline"
+                  size={21}
+                  color={Colors.white}
+                />
+
+                <Text
+                  style={styles.deleteButtonText}
+                >
+                  Delete Trip
                 </Text>
 
               </TouchableOpacity>
@@ -524,16 +1017,29 @@ export default function ActiveRideScreen() {
 
             <>
 
-              <Text style={styles.title}>
-                No Active Ride
-              </Text>
+              <View
+                style={styles.emptyContainer}
+              >
 
+                <Ionicons
+                  name="car-outline"
+                  size={45}
+                  color={Colors.textSecondary}
+                />
 
-              <Text style={styles.description}>
-                You currently don't have an active ride.
-                New ride requests and current trip activity
-                will appear here.
-              </Text>
+                <Text
+                  style={styles.emptyTitle}
+                >
+                  No Active Ride
+                </Text>
+
+                <Text
+                  style={styles.emptyText}
+                >
+                  You do not currently have an active ride offer.
+                </Text>
+
+              </View>
 
 
               <TouchableOpacity
@@ -552,7 +1058,9 @@ export default function ActiveRideScreen() {
                   color={Colors.white}
                 />
 
-                <Text style={styles.buttonText}>
+                <Text
+                  style={styles.buttonText}
+                >
                   View Ride Requests
                 </Text>
 
@@ -565,93 +1073,118 @@ export default function ActiveRideScreen() {
         </View>
 
 
-        {/* ================= ACTIVITY OPTIONS ================= */}
+        {/* ==================================================
+            RIDE ACTIVITY
+        ================================================== */}
 
-        <Text style={styles.sectionTitle}>
+        <Text
+          style={styles.sectionTitle}
+        >
           Ride Activity
         </Text>
 
 
-        {/* ================= RIDE REQUESTS ================= */}
-
-        <TouchableOpacity
+        <View
           style={styles.activityCard}
-          onPress={() =>
-            navigation.navigate(
-              "RiderRequests"
-            )
-          }
-          activeOpacity={0.7}
         >
 
-          <View style={styles.activityIcon}>
+          <Ionicons
+            name="time-outline"
+            size={25}
+            color={Colors.primary}
+          />
 
-            <Ionicons
-              name="people-outline"
-              size={24}
-              color={Colors.primary}
-            />
+          <View
+            style={styles.activityTextContainer}
+          >
+
+            <Text
+              style={styles.activityTitle}
+            >
+              Current Ride
+            </Text>
+
+            <Text
+              style={styles.activityText}
+            >
+              {ride
+                ? `${formatDate(ride.ride_date)} at ${formatTime(ride.departure_time)}`
+                : "No active ride"}
+            </Text>
 
           </View>
 
+        </View>
 
-          <View style={styles.activityText}>
 
-            <Text style={styles.activityTitle}>
+        {/* ==================================================
+            RIDE REQUESTS
+        ================================================== */}
+
+        <View
+          style={styles.optionCard}
+        >
+
+          <Ionicons
+            name="people-outline"
+            size={26}
+            color={Colors.primary}
+          />
+
+          <View
+            style={styles.optionTextContainer}
+          >
+
+            <Text
+              style={styles.optionTitle}
+            >
               Ride Requests
             </Text>
 
-            <Text style={styles.activityDescription}>
-              View and manage incoming ride requests.
+            <Text
+              style={styles.optionText}
+            >
+              View and manage requests from riders.
             </Text>
 
           </View>
 
-
-          <Ionicons
-            name="chevron-forward"
-            size={22}
-            color={Colors.textSecondary}
-          />
-
-        </TouchableOpacity>
+        </View>
 
 
-        {/* ================= CREATE RIDE ================= */}
+        {/* ==================================================
+            CREATE RIDE OFFER
+        ================================================== */}
 
         <TouchableOpacity
           style={styles.optionCard}
-          onPress={() =>
-            navigation.navigate(
-              "CreateRideOffer"
-            )
-          }
-          activeOpacity={0.7}
+          onPress={createNewRide}
+          activeOpacity={0.8}
         >
 
-          <View style={styles.optionIcon}>
+          <Ionicons
+            name="add-circle-outline"
+            size={26}
+            color={Colors.primary}
+          />
 
-            <Ionicons
-              name="add-circle-outline"
-              size={25}
-              color={Colors.driver}
-            />
+          <View
+            style={styles.optionTextContainer}
+          >
 
-          </View>
-
-
-          <View style={styles.optionContent}>
-
-            <Text style={styles.optionTitle}>
+            <Text
+              style={styles.optionTitle}
+            >
               Create Ride Offer
             </Text>
 
-            <Text style={styles.optionText}>
-              Create a ride and allow riders to request a seat.
+            <Text
+              style={styles.optionText}
+            >
+              Create a new ride offer for riders.
             </Text>
 
           </View>
-
 
           <Ionicons
             name="chevron-forward"
@@ -661,8 +1194,7 @@ export default function ActiveRideScreen() {
 
         </TouchableOpacity>
 
-
-      </View>
+      </ScrollView>
 
     </SafeAreaView>
 
@@ -671,23 +1203,21 @@ export default function ActiveRideScreen() {
 }
 
 
-const styles = StyleSheet.create({
+// ==================================================
+// STYLES
+// ==================================================
 
-  /* ================= CONTAINER ================= */
+const styles = StyleSheet.create({
 
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
 
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
-
-
-  /* ================= LOADING ================= */
 
   loadingContainer: {
     flex: 1,
@@ -696,123 +1226,170 @@ const styles = StyleSheet.create({
   },
 
   loadingText: {
+    marginTop: 10,
     fontSize: 15,
     color: Colors.textSecondary,
-    marginTop: 12,
   },
 
-
-  /* ================= BACK BUTTON ================= */
-
-  backButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 23,
-    backgroundColor: Colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-    elevation: 3,
-  },
-
-
-  /* ================= HEADER ================= */
-
-  heading: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: Colors.primary,
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: Colors.textPrimary,
+    marginBottom: 5,
   },
 
   subtitle: {
     fontSize: 15,
-    marginTop: 6,
-    marginBottom: 25,
     color: Colors.textSecondary,
+    marginBottom: 20,
   },
 
-
-  /* ================= MAIN ACTIVITY CARD ================= */
-
   card: {
-    width: "100%",
     backgroundColor: Colors.white,
-    borderRadius: 18,
-    padding: 25,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 25,
+    elevation: 3,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    elevation: 4,
   },
 
   iconContainer: {
-    width: 75,
-    height: 75,
-    borderRadius: 38,
-    backgroundColor: Colors.driverLight,
+    width: 50,
+    height: 50,
+    borderRadius: 15,
+    backgroundColor: Colors.background,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 12,
   },
 
-  title: {
-    fontSize: 22,
+  headerTextContainer: {
+    flex: 1,
+  },
+
+  cardTitle: {
+    fontSize: 18,
     fontWeight: "700",
-    color: Colors.primary,
-    marginTop: 18,
-    textAlign: "center",
+    color: Colors.textPrimary,
   },
 
-  description: {
+  cardSubtitle: {
+    fontSize: 13,
     color: Colors.textSecondary,
-    fontSize: 15,
-    lineHeight: 21,
-    textAlign: "center",
-    marginTop: 8,
+    marginTop: 3,
   },
 
-
-  /* ================= RIDE INFORMATION ================= */
-
-  rideInfo: {
-    width: "100%",
-    marginTop: 20,
+  routeContainer: {
+    marginTop: 25,
+    marginBottom: 15,
   },
 
-  infoRow: {
+  routeRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ECECEC",
   },
 
-  infoContent: {
-    flex: 1,
+  routeTextContainer: {
     marginLeft: 10,
+    flex: 1,
   },
 
-  infoLabel: {
+  routeLabel: {
     fontSize: 12,
     color: Colors.textSecondary,
+    marginBottom: 2,
   },
 
-  infoValue: {
-    fontSize: 14,
+  routeText: {
+    fontSize: 15,
     fontWeight: "600",
-    color: Colors.primary,
-    marginTop: 2,
+    color: Colors.textPrimary,
   },
 
+  routeLine: {
+    width: 1,
+    height: 25,
+    backgroundColor: Colors.textSecondary,
+    marginLeft: 9,
+  },
 
-  /* ================= BUTTON ================= */
-
-  button: {
+  detailsButton: {
     width: "100%",
-    height: 54,
-    backgroundColor: Colors.driver,
+    minHeight: 50,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    marginTop: 5,
+  },
+
+  detailsButtonText: {
+    color: Colors.primary,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  rideDetails: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: Colors.background,
+    borderRadius: 15,
+  },
+
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 6,
+    marginTop: 10,
+  },
+
+  input: {
+    width: "100%",
+    height: 48,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+
+  updateButton: {
+    width: "100%",
+    height: 52,
+    backgroundColor: Colors.primary,
     borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    marginTop: 22,
+    marginTop: 20,
+  },
+
+  updateButtonText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+
+  button: {
+    width: "100%",
+    height: 54,
+    backgroundColor: Colors.primary,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    marginTop: 15,
   },
 
   buttonText: {
@@ -822,93 +1399,102 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
+  deleteButton: {
+    width: "100%",
+    height: 54,
+    backgroundColor: "#C62828",
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    marginTop: 10,
+  },
 
-  /* ================= ACTIVITY OPTIONS ================= */
+  deleteButtonText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+
+  emptyContainer: {
+    alignItems: "center",
+    paddingVertical: 30,
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginTop: 10,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginTop: 5,
+  },
 
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "700",
-    color: Colors.primary,
-    marginTop: 28,
-    marginBottom: 14,
+    fontWeight: "800",
+    color: Colors.textPrimary,
+    marginBottom: 12,
   },
 
   activityCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 15,
+    padding: 18,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.white,
-    padding: 16,
-    borderRadius: 15,
-    marginBottom: 12,
+    marginBottom: 15,
     elevation: 2,
   },
 
-  activityIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 23,
-    backgroundColor: Colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-
-  activityText: {
+  activityTextContainer: {
+    marginLeft: 12,
     flex: 1,
   },
 
   activityTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: Colors.text,
-    marginBottom: 4,
+    fontWeight: "700",
+    color: Colors.textPrimary,
   },
 
-  activityDescription: {
+  activityText: {
     fontSize: 13,
     color: Colors.textSecondary,
+    marginTop: 3,
   },
-
-
-  /* ================= OPTION CARD ================= */
 
   optionCard: {
-    width: "100%",
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 17,
-    marginBottom: 12,
+    borderRadius: 15,
+    padding: 18,
     flexDirection: "row",
     alignItems: "center",
-    elevation: 3,
+    marginBottom: 12,
+    elevation: 2,
   },
 
-  optionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.driverLight,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  optionContent: {
+  optionTextContainer: {
     flex: 1,
-    marginLeft: 14,
-    marginRight: 10,
+    marginLeft: 12,
   },
 
   optionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: Colors.primary,
+    color: Colors.textPrimary,
   },
 
   optionText: {
     fontSize: 13,
     color: Colors.textSecondary,
-    marginTop: 4,
-    lineHeight: 18,
+    marginTop: 3,
   },
 
 });

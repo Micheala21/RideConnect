@@ -1,1197 +1,1293 @@
 
-import React, { useState } from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Modal,
-  TextInput,
-} from "react-native";
-
-import { Ionicons } from "@expo/vector-icons";
-
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+// import React, { useEffect, useState } from "react";
+// import {
+//   SafeAreaView,
+//   View,
+//   Text,
+//   StyleSheet,
+//   TouchableOpacity,
+//   ScrollView,
+//   Modal,
+//   TextInput,
+//   Alert,
+// } from "react-native";
+
+// import { Ionicons } from "@expo/vector-icons";
+
+// import { useNavigation, useRoute } from "@react-navigation/native";
+// import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+// import Colors from "../../constants/colors";
+// import { RootStackParamList } from "../../navigation/AppNavigator";
+
+// import {
+//   getReviewContext,
+//   submitRideReview,
+// } from "../../services/reviewService";
+
+// type NavigationProp = NativeStackNavigationProp<
+//   RootStackParamList,
+//   "TripReceipt"
+// >;
+
+// export default function TripReceiptScreen() {
+
+//   // ==================================================
+//   // NAVIGATION
+//   // ==================================================
+
+//   const navigation = useNavigation<NavigationProp>();
+//   const route = useRoute<any>();
+
+//   // Teammates only need to pass the completed Supabase ride ID:
+//   // navigation.navigate("TripReceipt", { rideId: ride.id })
+//   const rideId = route.params?.rideId as string | undefined;
+
+//   // ==================================================
+//   // RATING STATE
+//   // ==================================================
+
+//   const [showRating, setShowRating] =
+//     useState(false);
+
+//   const [rating, setRating] =
+//     useState(0);
+
+//   const [comment, setComment] =
+//     useState("");
+
+//   const [ratingSubmitted, setRatingSubmitted] =
+//     useState(false);
+
+//   const [submittingRating, setSubmittingRating] =
+//     useState(false);
+
+//   const [driverName, setDriverName] =
+//     useState("your driver");
+
+//   const [reviewReady, setReviewReady] =
+//     useState(false);
+
+//   useEffect(() => {
+//     let active = true;
+
+//     const loadReview = async () => {
+//       if (!rideId) {
+//         if (active) setReviewReady(true);
+//         return;
+//       }
+
+//       try {
+//         const context = await getReviewContext(rideId);
+
+//         if (!active) return;
+
+//         setDriverName(context.driverName);
+
+//         if (context.existingReview) {
+//           setRating(context.existingReview.rating);
+//           setComment(context.existingReview.review ?? "");
+//           setRatingSubmitted(true);
+//           setShowRating(false);
+//         } else if (context.status === "completed") {
+//           setShowRating(true);
+//         } else {
+//           setShowRating(false);
+//         }
+//       } catch (error) {
+//         if (active) {
+//           Alert.alert(
+//             "Review unavailable",
+//             error instanceof Error
+//               ? error.message
+//               : "The review information could not be loaded.",
+//           );
+//         }
+//       } finally {
+//         if (active) setReviewReady(true);
+//       }
+//     };
+
+//     loadReview();
+
+//     return () => {
+//       active = false;
+//     };
+//   }, [rideId]);
+
+
+//   // ==================================================
+//   // RECEIPT DATA
+//   // ==================================================
+
+//   const receipt = {
+//     receiptNo: "RC-2026-000145",
+//     bookingId: "BK458721",
+//     date: "12 August 2026",
+//     time: "08:30 AM",
+//     driver: "Alice Johnson",
+//     vehicle: "Toyota Prius",
+//     registration: "CA 123-456",
+//     pickup: "CPUT Bellville Campus",
+//     destination: "Cape Town CBD",
+//     paymentMethod: "Cash",
+//     distance: "18 km",
+//     duration: "30 mins",
+//     fare: "R120",
+//   };
+
+
+//   // ==================================================
+//   // SUBMIT RATING
+//   // ==================================================
+
+//   const handleSubmitRating = async () => {
+
+//     if (rating === 0 || submittingRating) {
+//       return;
+//     }
 
-import Colors from "../../constants/colors";
-import { RootStackParamList } from "../../navigation/AppNavigator";
+//     if (!rideId) {
+//       Alert.alert(
+//         "Ride not selected",
+//         "A completed ride ID must be passed to this screen before a review can be submitted.",
+//       );
+//       return;
+//     }
 
-type NavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "TripReceipt"
->;
+//     setSubmittingRating(true);
 
-export default function TripReceiptScreen() {
+//     try {
+//       await submitRideReview(
+//         rideId,
+//         rating,
+//         comment,
+//       );
 
-  // ==================================================
-  // NAVIGATION
-  // ==================================================
+//       setRatingSubmitted(true);
 
-  const navigation = useNavigation<NavigationProp>();
+//       setTimeout(() => {
+//         setShowRating(false);
+//       }, 800);
+//     } catch (error) {
+//       Alert.alert(
+//         "Review could not be submitted",
+//         error instanceof Error
+//           ? error.message
+//           : "Please try again.",
+//       );
+//     } finally {
+//       setSubmittingRating(false);
+//     }
+//   };
 
-  // ==================================================
-  // RATING STATE
-  // ==================================================
 
-  const [showRating, setShowRating] =
-    useState(true);
+//   // ==================================================
+//   // RENDER
+//   // ==================================================
 
-  const [rating, setRating] =
-    useState(0);
+//   return (
+//     <SafeAreaView style={styles.container}>
 
-  const [comment, setComment] =
-    useState("");
+//       <ScrollView
+//         showsVerticalScrollIndicator={false}
+//         contentContainerStyle={styles.content}
+//       >
 
-  const [ratingSubmitted, setRatingSubmitted] =
-    useState(false);
+//         {/* ================= BACK BUTTON ================= */}
 
+//         <TouchableOpacity
+//           style={styles.backButton}
+//           onPress={() => navigation.navigate("RiderHome")}
+//           activeOpacity={0.7}
+//         >
+//           <Ionicons
+//             name="arrow-back"
+//             size={26}
+//             color={Colors.primary}
+//           />
+//         </TouchableOpacity>
 
-  // ==================================================
-  // RECEIPT DATA
-  // ==================================================
 
-  const receipt = {
-    receiptNo: "RC-2026-000145",
-    bookingId: "BK458721",
-    date: "12 August 2026",
-    time: "08:30 AM",
-    driver: "Alice Johnson",
-    vehicle: "Toyota Prius",
-    registration: "CA 123-456",
-    pickup: "CPUT Bellville Campus",
-    destination: "Cape Town CBD",
-    paymentMethod: "Cash",
-    distance: "18 km",
-    duration: "30 mins",
-    fare: "R120",
-  };
+//         {/* ================= HEADER ================= */}
 
+//         <View style={styles.header}>
 
-  // ==================================================
-  // SUBMIT RATING
-  // ==================================================
+//           <View style={styles.headerIcon}>
 
-  const handleSubmitRating = () => {
+//             <Ionicons
+//               name="checkmark-circle"
+//               size={30}
+//               color={Colors.success}
+//             />
 
-    if (rating === 0) {
-      return;
-    }
+//           </View>
 
-    setRatingSubmitted(true);
+//           <View style={styles.headerText}>
 
-    setTimeout(() => {
-      setShowRating(false);
-    }, 800);
-  };
+//             <Text style={styles.heading}>
+//               Trip Receipt
+//             </Text>
 
+//             <Text style={styles.subHeading}>
+//               Thank you for choosing RideConnect.
+//             </Text>
 
-  // ==================================================
-  // RENDER
-  // ==================================================
+//           </View>
 
-  return (
-    <SafeAreaView style={styles.container}>
+//         </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
 
-        {/* ================= BACK BUTTON ================= */}
+//         {/* ================= RECEIPT ================= */}
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.navigate("RiderHome")}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={26}
-            color={Colors.primary}
-          />
-        </TouchableOpacity>
+//         <View style={styles.receiptCard}>
 
+//           {/* Receipt Header */}
 
-        {/* ================= HEADER ================= */}
+//           <View style={styles.receiptHeader}>
 
-        <View style={styles.header}>
+//             <View style={styles.receiptIcon}>
 
-          <View style={styles.headerIcon}>
+//               <Ionicons
+//                 name="receipt-outline"
+//                 size={28}
+//                 color={Colors.rider}
+//               />
 
-            <Ionicons
-              name="checkmark-circle"
-              size={30}
-              color={Colors.success}
-            />
+//             </View>
 
-          </View>
+//             <View style={styles.receiptHeaderText}>
 
-          <View style={styles.headerText}>
+//               <Text style={styles.receiptTitle}>
+//                 Payment Receipt
+//               </Text>
 
-            <Text style={styles.heading}>
-              Trip Receipt
-            </Text>
+//               <Text style={styles.receiptSubtitle}>
+//                 RideConnect Trip
+//               </Text>
 
-            <Text style={styles.subHeading}>
-              Thank you for choosing RideConnect.
-            </Text>
+//             </View>
 
-          </View>
+//           </View>
 
-        </View>
 
+//           <View style={styles.divider} />
 
-        {/* ================= RECEIPT ================= */}
 
-        <View style={styles.receiptCard}>
+//           {/* ================= RECEIPT INFORMATION ================= */}
 
-          {/* Receipt Header */}
+//           <View style={styles.infoRow}>
 
-          <View style={styles.receiptHeader}>
+//             <View style={styles.infoIcon}>
 
-            <View style={styles.receiptIcon}>
+//               <Ionicons
+//                 name="document-text-outline"
+//                 size={18}
+//                 color={Colors.rider}
+//               />
 
-              <Ionicons
-                name="receipt-outline"
-                size={28}
-                color={Colors.rider}
-              />
+//             </View>
 
-            </View>
+//             <View style={styles.infoText}>
 
-            <View style={styles.receiptHeaderText}>
+//               <Text style={styles.label}>
+//                 Receipt Number
+//               </Text>
 
-              <Text style={styles.receiptTitle}>
-                Payment Receipt
-              </Text>
+//               <Text style={styles.value}>
+//                 {receipt.receiptNo}
+//               </Text>
 
-              <Text style={styles.receiptSubtitle}>
-                RideConnect Trip
-              </Text>
+//             </View>
 
-            </View>
+//           </View>
 
-          </View>
 
+//           <View style={styles.infoRow}>
 
-          <View style={styles.divider} />
+//             <View style={styles.infoIcon}>
 
+//               <Ionicons
+//                 name="bookmark-outline"
+//                 size={18}
+//                 color={Colors.rider}
+//               />
 
-          {/* ================= RECEIPT INFORMATION ================= */}
+//             </View>
 
-          <View style={styles.infoRow}>
+//             <View style={styles.infoText}>
 
-            <View style={styles.infoIcon}>
+//               <Text style={styles.label}>
+//                 Booking ID
+//               </Text>
 
-              <Ionicons
-                name="document-text-outline"
-                size={18}
-                color={Colors.rider}
-              />
+//               <Text style={styles.value}>
+//                 {receipt.bookingId}
+//               </Text>
 
-            </View>
+//             </View>
 
-            <View style={styles.infoText}>
+//           </View>
 
-              <Text style={styles.label}>
-                Receipt Number
-              </Text>
 
-              <Text style={styles.value}>
-                {receipt.receiptNo}
-              </Text>
+//           <View style={styles.infoRow}>
 
-            </View>
+//             <View style={styles.infoIcon}>
 
-          </View>
+//               <Ionicons
+//                 name="calendar-outline"
+//                 size={18}
+//                 color={Colors.rider}
+//               />
 
+//             </View>
 
-          <View style={styles.infoRow}>
+//             <View style={styles.infoText}>
 
-            <View style={styles.infoIcon}>
+//               <Text style={styles.label}>
+//                 Date
+//               </Text>
 
-              <Ionicons
-                name="bookmark-outline"
-                size={18}
-                color={Colors.rider}
-              />
+//               <Text style={styles.value}>
+//                 {receipt.date}
+//               </Text>
 
-            </View>
+//             </View>
 
-            <View style={styles.infoText}>
+//           </View>
 
-              <Text style={styles.label}>
-                Booking ID
-              </Text>
 
-              <Text style={styles.value}>
-                {receipt.bookingId}
-              </Text>
+//           <View style={styles.infoRow}>
 
-            </View>
+//             <View style={styles.infoIcon}>
 
-          </View>
+//               <Ionicons
+//                 name="time-outline"
+//                 size={18}
+//                 color={Colors.rider}
+//               />
 
+//             </View>
 
-          <View style={styles.infoRow}>
+//             <View style={styles.infoText}>
 
-            <View style={styles.infoIcon}>
+//               <Text style={styles.label}>
+//                 Time
+//               </Text>
 
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color={Colors.rider}
-              />
+//               <Text style={styles.value}>
+//                 {receipt.time}
+//               </Text>
 
-            </View>
+//             </View>
 
-            <View style={styles.infoText}>
+//           </View>
 
-              <Text style={styles.label}>
-                Date
-              </Text>
 
-              <Text style={styles.value}>
-                {receipt.date}
-              </Text>
+//           <View style={styles.divider} />
 
-            </View>
 
-          </View>
+//           {/* ================= DRIVER DETAILS ================= */}
 
+//           <View style={styles.sectionHeader}>
 
-          <View style={styles.infoRow}>
+//             <View style={styles.sectionIcon}>
 
-            <View style={styles.infoIcon}>
+//               <Ionicons
+//                 name="person-outline"
+//                 size={20}
+//                 color={Colors.rider}
+//               />
 
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={Colors.rider}
-              />
+//             </View>
 
-            </View>
+//             <Text style={styles.sectionTitle}>
+//               Driver Details
+//             </Text>
 
-            <View style={styles.infoText}>
+//           </View>
 
-              <Text style={styles.label}>
-                Time
-              </Text>
 
-              <Text style={styles.value}>
-                {receipt.time}
-              </Text>
+//           <View style={styles.row}>
 
-            </View>
+//             <Text style={styles.label}>
+//               Driver
+//             </Text>
 
-          </View>
+//             <Text style={styles.valueRight}>
+//               {receipt.driver}
+//             </Text>
 
+//           </View>
 
-          <View style={styles.divider} />
 
+//           <View style={styles.row}>
 
-          {/* ================= DRIVER DETAILS ================= */}
+//             <Text style={styles.label}>
+//               Vehicle
+//             </Text>
 
-          <View style={styles.sectionHeader}>
+//             <Text style={styles.valueRight}>
+//               {receipt.vehicle}
+//             </Text>
 
-            <View style={styles.sectionIcon}>
+//           </View>
 
-              <Ionicons
-                name="person-outline"
-                size={20}
-                color={Colors.rider}
-              />
 
-            </View>
+//           <View style={styles.row}>
 
-            <Text style={styles.sectionTitle}>
-              Driver Details
-            </Text>
+//             <Text style={styles.label}>
+//               Registration
+//             </Text>
 
-          </View>
+//             <Text style={styles.valueRight}>
+//               {receipt.registration}
+//             </Text>
 
+//           </View>
 
-          <View style={styles.row}>
 
-            <Text style={styles.label}>
-              Driver
-            </Text>
+//           <View style={styles.divider} />
 
-            <Text style={styles.valueRight}>
-              {receipt.driver}
-            </Text>
 
-          </View>
+//           {/* ================= TRIP DETAILS ================= */}
 
+//           <View style={styles.sectionHeader}>
 
-          <View style={styles.row}>
+//             <View style={styles.sectionIcon}>
 
-            <Text style={styles.label}>
-              Vehicle
-            </Text>
+//               <Ionicons
+//                 name="navigate-outline"
+//                 size={20}
+//                 color={Colors.rider}
+//               />
 
-            <Text style={styles.valueRight}>
-              {receipt.vehicle}
-            </Text>
+//             </View>
 
-          </View>
+//             <Text style={styles.sectionTitle}>
+//               Trip Details
+//             </Text>
 
+//           </View>
 
-          <View style={styles.row}>
 
-            <Text style={styles.label}>
-              Registration
-            </Text>
+//           <View style={styles.row}>
 
-            <Text style={styles.valueRight}>
-              {receipt.registration}
-            </Text>
+//             <Text style={styles.label}>
+//               Pickup
+//             </Text>
 
-          </View>
+//             <Text style={styles.valueRight}>
+//               {receipt.pickup}
+//             </Text>
 
+//           </View>
 
-          <View style={styles.divider} />
 
+//           <View style={styles.row}>
 
-          {/* ================= TRIP DETAILS ================= */}
+//             <Text style={styles.label}>
+//               Destination
+//             </Text>
 
-          <View style={styles.sectionHeader}>
+//             <Text style={styles.valueRight}>
+//               {receipt.destination}
+//             </Text>
 
-            <View style={styles.sectionIcon}>
+//           </View>
 
-              <Ionicons
-                name="navigate-outline"
-                size={20}
-                color={Colors.rider}
-              />
 
-            </View>
+//           <View style={styles.row}>
 
-            <Text style={styles.sectionTitle}>
-              Trip Details
-            </Text>
+//             <Text style={styles.label}>
+//               Distance
+//             </Text>
 
-          </View>
+//             <Text style={styles.valueRight}>
+//               {receipt.distance}
+//             </Text>
 
+//           </View>
 
-          <View style={styles.row}>
 
-            <Text style={styles.label}>
-              Pickup
-            </Text>
+//           <View style={styles.row}>
 
-            <Text style={styles.valueRight}>
-              {receipt.pickup}
-            </Text>
+//             <Text style={styles.label}>
+//               Duration
+//             </Text>
 
-          </View>
+//             <Text style={styles.valueRight}>
+//               {receipt.duration}
+//             </Text>
 
+//           </View>
 
-          <View style={styles.row}>
 
-            <Text style={styles.label}>
-              Destination
-            </Text>
+//           <View style={styles.divider} />
 
-            <Text style={styles.valueRight}>
-              {receipt.destination}
-            </Text>
 
-          </View>
+//           {/* ================= PAYMENT ================= */}
 
+//           <View style={styles.sectionHeader}>
 
-          <View style={styles.row}>
+//             <View style={styles.sectionIcon}>
 
-            <Text style={styles.label}>
-              Distance
-            </Text>
+//               <Ionicons
+//                 name="card-outline"
+//                 size={20}
+//                 color={Colors.rider}
+//               />
 
-            <Text style={styles.valueRight}>
-              {receipt.distance}
-            </Text>
+//             </View>
 
-          </View>
+//             <Text style={styles.sectionTitle}>
+//               Payment
+//             </Text>
 
+//           </View>
 
-          <View style={styles.row}>
 
-            <Text style={styles.label}>
-              Duration
-            </Text>
+//           <View style={styles.row}>
 
-            <Text style={styles.valueRight}>
-              {receipt.duration}
-            </Text>
+//             <Text style={styles.label}>
+//               Payment Method
+//             </Text>
 
-          </View>
+//             <View style={styles.paymentBadge}>
 
+//               <Ionicons
+//                 name="cash-outline"
+//                 size={15}
+//                 color={Colors.success}
+//               />
 
-          <View style={styles.divider} />
+//               <Text style={styles.paymentText}>
+//                 {receipt.paymentMethod}
+//               </Text>
 
+//             </View>
 
-          {/* ================= PAYMENT ================= */}
+//           </View>
 
-          <View style={styles.sectionHeader}>
 
-            <View style={styles.sectionIcon}>
+//           {/* ================= TOTAL ================= */}
 
-              <Ionicons
-                name="card-outline"
-                size={20}
-                color={Colors.rider}
-              />
+//           <View style={styles.totalContainer}>
 
-            </View>
+//             <View>
 
-            <Text style={styles.sectionTitle}>
-              Payment
-            </Text>
+//               <Text style={styles.totalLabel}>
+//                 Total Paid
+//               </Text>
 
-          </View>
+//               <Text style={styles.totalSubtext}>
+//                 Payment completed
+//               </Text>
 
+//             </View>
 
-          <View style={styles.row}>
+//             <Text style={styles.totalPrice}>
+//               {receipt.fare}
+//             </Text>
 
-            <Text style={styles.label}>
-              Payment Method
-            </Text>
+//           </View>
 
-            <View style={styles.paymentBadge}>
+//         </View>
 
-              <Ionicons
-                name="cash-outline"
-                size={15}
-                color={Colors.success}
-              />
 
-              <Text style={styles.paymentText}>
-                {receipt.paymentMethod}
-              </Text>
+//         {/* ================= BUTTONS ================= */}
 
-            </View>
+//         <TouchableOpacity
+//           style={styles.primaryButton}
+//           activeOpacity={0.8}
+//         >
 
-          </View>
+//           <Ionicons
+//             name="download-outline"
+//             size={21}
+//             color={Colors.white}
+//           />
 
+//           <Text style={styles.primaryButtonText}>
+//             Download Receipt
+//           </Text>
 
-          {/* ================= TOTAL ================= */}
+//           <Ionicons
+//             name="arrow-forward"
+//             size={20}
+//             color={Colors.white}
+//             style={styles.buttonArrow}
+//           />
 
-          <View style={styles.totalContainer}>
+//         </TouchableOpacity>
 
-            <View>
 
-              <Text style={styles.totalLabel}>
-                Total Paid
-              </Text>
+//         <TouchableOpacity
+//           style={styles.secondaryButton}
+//           activeOpacity={0.8}
+//         >
 
-              <Text style={styles.totalSubtext}>
-                Payment completed
-              </Text>
+//           <Ionicons
+//             name="share-social-outline"
+//             size={21}
+//             color={Colors.rider}
+//           />
 
-            </View>
+//           <Text style={styles.secondaryButtonText}>
+//             Share Receipt
+//           </Text>
 
-            <Text style={styles.totalPrice}>
-              {receipt.fare}
-            </Text>
+//         </TouchableOpacity>
 
-          </View>
 
-        </View>
+//         {/* ================= RATE DRIVER ================= */}
 
+//         {!ratingSubmitted && reviewReady && rideId && (
 
-        {/* ================= BUTTONS ================= */}
+//           <TouchableOpacity
+//             style={styles.rateButton}
+//             onPress={() => setShowRating(true)}
+//             activeOpacity={0.8}
+//           >
 
-        <TouchableOpacity
-          style={styles.primaryButton}
-          activeOpacity={0.8}
-        >
+//             <Ionicons
+//               name="star-outline"
+//               size={21}
+//               color={Colors.white}
+//             />
 
-          <Ionicons
-            name="download-outline"
-            size={21}
-            color={Colors.white}
-          />
+//             <Text style={styles.rateButtonText}>
+//               Rate Driver
+//             </Text>
 
-          <Text style={styles.primaryButtonText}>
-            Download Receipt
-          </Text>
+//           </TouchableOpacity>
 
-          <Ionicons
-            name="arrow-forward"
-            size={20}
-            color={Colors.white}
-            style={styles.buttonArrow}
-          />
+//         )}
 
-        </TouchableOpacity>
+//       </ScrollView>
 
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          activeOpacity={0.8}
-        >
+//       {/* ==================================================
+//           RATING POPUP
+//       ================================================== */}
 
-          <Ionicons
-            name="share-social-outline"
-            size={21}
-            color={Colors.rider}
-          />
+//       <Modal
+//         visible={showRating}
+//         transparent={true}
+//         animationType="fade"
+//         onRequestClose={() =>
+//           setShowRating(false)
+//         }
+//       >
 
-          <Text style={styles.secondaryButtonText}>
-            Share Receipt
-          </Text>
+//         <View style={styles.modalOverlay}>
 
-        </TouchableOpacity>
+//           <View style={styles.ratingModal}>
 
+//             {/* Close */}
 
-        {/* ================= RATE DRIVER ================= */}
+//             <TouchableOpacity
+//               style={styles.closeButton}
+//               onPress={() =>
+//                 setShowRating(false)
+//               }
+//               activeOpacity={0.7}
+//             >
 
-        {!ratingSubmitted && (
+//               <Ionicons
+//                 name="close"
+//                 size={24}
+//                 color={Colors.textSecondary}
+//               />
 
-          <TouchableOpacity
-            style={styles.rateButton}
-            onPress={() => setShowRating(true)}
-            activeOpacity={0.8}
-          >
+//             </TouchableOpacity>
 
-            <Ionicons
-              name="star-outline"
-              size={21}
-              color={Colors.white}
-            />
 
-            <Text style={styles.rateButtonText}>
-              Rate Driver
-            </Text>
+//             {/* Icon */}
 
-          </TouchableOpacity>
+//             <View style={styles.ratingIcon}>
 
-        )}
+//               <Ionicons
+//                 name="star"
+//                 size={32}
+//                 color="#F5B301"
+//               />
 
-      </ScrollView>
+//             </View>
 
 
-      {/* ==================================================
-          RATING POPUP
-      ================================================== */}
+//             {/* Title */}
 
-      <Modal
-        visible={showRating}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() =>
-          setShowRating(false)
-        }
-      >
+//             <Text style={styles.ratingTitle}>
+//               Rate Your Driver
+//             </Text>
 
-        <View style={styles.modalOverlay}>
 
-          <View style={styles.ratingModal}>
+//             <Text style={styles.ratingSubtitle}>
+//               How was your ride with {driverName}?
+//             </Text>
 
-            {/* Close */}
 
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() =>
-                setShowRating(false)
-              }
-              activeOpacity={0.7}
-            >
+//             {/* ================= STARS ================= */}
 
-              <Ionicons
-                name="close"
-                size={24}
-                color={Colors.textSecondary}
-              />
+//             <View style={styles.starContainer}>
 
-            </TouchableOpacity>
+//               {[1, 2, 3, 4, 5].map((star) => (
 
+//                 <TouchableOpacity
+//                   key={star}
+//                   onPress={() =>
+//                     setRating(star)
+//                   }
+//                   activeOpacity={0.7}
+//                 >
 
-            {/* Icon */}
+//                   <Ionicons
+//                     name={
+//                       star <= rating
+//                         ? "star"
+//                         : "star-outline"
+//                     }
+//                     size={42}
+//                     color="#F5B301"
+//                   />
 
-            <View style={styles.ratingIcon}>
+//                 </TouchableOpacity>
 
-              <Ionicons
-                name="star"
-                size={32}
-                color="#F5B301"
-              />
+//               ))}
 
-            </View>
+//             </View>
 
 
-            {/* Title */}
+//             {/* Rating Text */}
 
-            <Text style={styles.ratingTitle}>
-              Rate Your Driver
-            </Text>
+//             <Text style={styles.ratingText}>
 
+//               {rating === 0
+//                 ? "Tap a star to rate"
+//                 : rating === 1
+//                 ? "Poor"
+//                 : rating === 2
+//                 ? "Needs Improvement"
+//                 : rating === 3
+//                 ? "Good"
+//                 : rating === 4
+//                 ? "Very Good"
+//                 : "Excellent"}
 
-            <Text style={styles.ratingSubtitle}>
-              How was your ride with {receipt.driver}?
-            </Text>
+//             </Text>
 
 
-            {/* ================= STARS ================= */}
+//             {/* ================= COMMENT ================= */}
 
-            <View style={styles.starContainer}>
+//             <TextInput
+//               style={styles.commentInput}
+//               placeholder="Leave a comment (optional)"
+//               placeholderTextColor="#999"
+//               value={comment}
+//               onChangeText={setComment}
+//               multiline
+//               textAlignVertical="top"
+//             />
 
-              {[1, 2, 3, 4, 5].map((star) => (
 
-                <TouchableOpacity
-                  key={star}
-                  onPress={() =>
-                    setRating(star)
-                  }
-                  activeOpacity={0.7}
-                >
+//             {/* ================= SUBMIT ================= */}
 
-                  <Ionicons
-                    name={
-                      star <= rating
-                        ? "star"
-                        : "star-outline"
-                    }
-                    size={42}
-                    color="#F5B301"
-                  />
+//             <TouchableOpacity
+//               style={[
+//                 styles.submitRatingButton,
+//                 (rating === 0 || submittingRating) &&
+//                   styles.disabledButton,
+//               ]}
+//               disabled={rating === 0 || submittingRating}
+//               onPress={handleSubmitRating}
+//               activeOpacity={0.8}
+//             >
 
-                </TouchableOpacity>
+//               <Text style={styles.submitRatingText}>
+//                 {submittingRating
+//                   ? "Submitting..."
+//                   : ratingSubmitted
+//                   ? "Rating Submitted"
+//                   : "Submit Rating"}
+//               </Text>
 
-              ))}
+//             </TouchableOpacity>
 
-            </View>
 
+//             {/* Maybe Later */}
 
-            {/* Rating Text */}
+//             {!ratingSubmitted && (
 
-            <Text style={styles.ratingText}>
+//               <TouchableOpacity
+//                 onPress={() =>
+//                   setShowRating(false)
+//                 }
+//                 activeOpacity={0.7}
+//               >
 
-              {rating === 0
-                ? "Tap a star to rate"
-                : rating === 1
-                ? "Poor"
-                : rating === 2
-                ? "Needs Improvement"
-                : rating === 3
-                ? "Good"
-                : rating === 4
-                ? "Very Good"
-                : "Excellent"}
+//                 <Text style={styles.laterText}>
+//                   Maybe Later
+//                 </Text>
 
-            </Text>
+//               </TouchableOpacity>
 
+//             )}
 
-            {/* ================= COMMENT ================= */}
+//           </View>
 
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Leave a comment (optional)"
-              placeholderTextColor="#999"
-              value={comment}
-              onChangeText={setComment}
-              multiline
-              textAlignVertical="top"
-            />
+//         </View>
 
+//       </Modal>
 
-            {/* ================= SUBMIT ================= */}
+//     </SafeAreaView>
+//   );
+// }
 
-            <TouchableOpacity
-              style={[
-                styles.submitRatingButton,
-                rating === 0 &&
-                  styles.disabledButton,
-              ]}
-              disabled={rating === 0}
-              onPress={handleSubmitRating}
-              activeOpacity={0.8}
-            >
 
-              <Text style={styles.submitRatingText}>
-                {ratingSubmitted
-                  ? "Rating Submitted"
-                  : "Submit Rating"}
-              </Text>
+// // ======================================================
+// // STYLES
+// // ======================================================
 
-            </TouchableOpacity>
+// const styles = StyleSheet.create({
 
+//   container: {
+//     flex: 1,
+//     backgroundColor: Colors.background,
+//   },
 
-            {/* Maybe Later */}
+//   content: {
+//     paddingHorizontal: 20,
+//     paddingTop: 10,
+//     paddingBottom: 40,
+//   },
 
-            {!ratingSubmitted && (
 
-              <TouchableOpacity
-                onPress={() =>
-                  setShowRating(false)
-                }
-                activeOpacity={0.7}
-              >
+//   // ================= BACK BUTTON =================
 
-                <Text style={styles.laterText}>
-                  Maybe Later
-                </Text>
+//   backButton: {
+//     width: 45,
+//     height: 45,
+//     borderRadius: 23,
+//     backgroundColor: Colors.white,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginBottom: 18,
+//     elevation: 3,
+//   },
 
-              </TouchableOpacity>
 
-            )}
+//   // ================= HEADER =================
 
-          </View>
+//   header: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     marginBottom: 24,
+//   },
 
-        </View>
+//   headerIcon: {
+//     width: 48,
+//     height: 48,
+//     borderRadius: 24,
+//     backgroundColor: Colors.white,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginRight: 12,
+//     elevation: 2,
+//   },
 
-      </Modal>
+//   headerText: {
+//     flex: 1,
+//   },
 
-    </SafeAreaView>
-  );
-}
+//   heading: {
+//     fontSize: 28,
+//     fontWeight: "700",
+//     color: Colors.primary,
+//   },
 
+//   subHeading: {
+//     color: Colors.textSecondary,
+//     fontSize: 14,
+//     marginTop: 4,
+//     lineHeight: 19,
+//   },
 
-// ======================================================
-// STYLES
-// ======================================================
 
-const styles = StyleSheet.create({
+//   // ================= RECEIPT =================
 
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+//   receiptCard: {
+//     width: "100%",
+//     backgroundColor: Colors.white,
+//     borderRadius: 20,
+//     padding: 20,
+//     elevation: 4,
+//   },
 
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 40,
-  },
+//   receiptHeader: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//   },
 
+//   receiptIcon: {
+//     width: 58,
+//     height: 58,
+//     borderRadius: 29,
+//     backgroundColor: "#EEF5FB",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginRight: 13,
+//   },
 
-  // ================= BACK BUTTON =================
+//   receiptHeaderText: {
+//     flex: 1,
+//   },
 
-  backButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 23,
-    backgroundColor: Colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 18,
-    elevation: 3,
-  },
+//   receiptTitle: {
+//     fontSize: 20,
+//     fontWeight: "700",
+//     color: Colors.primary,
+//   },
 
+//   receiptSubtitle: {
+//     fontSize: 13,
+//     color: Colors.textSecondary,
+//     marginTop: 3,
+//   },
 
-  // ================= HEADER =================
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
+//   // ================= DIVIDER =================
 
-  headerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    elevation: 2,
-  },
+//   divider: {
+//     height: 1,
+//     backgroundColor: "#E6EAF0",
+//     marginVertical: 17,
+//   },
 
-  headerText: {
-    flex: 1,
-  },
 
-  heading: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
+//   // ================= INFORMATION =================
 
-  subHeading: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    marginTop: 4,
-    lineHeight: 19,
-  },
+//   infoRow: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     marginVertical: 7,
+//   },
 
+//   infoIcon: {
+//     width: 36,
+//     height: 36,
+//     borderRadius: 18,
+//     backgroundColor: Colors.background,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginRight: 11,
+//   },
 
-  // ================= RECEIPT =================
+//   infoText: {
+//     flex: 1,
+//   },
 
-  receiptCard: {
-    width: "100%",
-    backgroundColor: Colors.white,
-    borderRadius: 20,
-    padding: 20,
-    elevation: 4,
-  },
 
-  receiptHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+//   // ================= SECTIONS =================
 
-  receiptIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#EEF5FB",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 13,
-  },
+//   sectionHeader: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     marginBottom: 12,
+//   },
 
-  receiptHeaderText: {
-    flex: 1,
-  },
+//   sectionIcon: {
+//     width: 38,
+//     height: 38,
+//     borderRadius: 19,
+//     backgroundColor: "#EEF5FB",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginRight: 10,
+//   },
 
-  receiptTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
+//   sectionTitle: {
+//     fontSize: 18,
+//     fontWeight: "700",
+//     color: Colors.primary,
+//   },
 
-  receiptSubtitle: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 3,
-  },
 
+//   // ================= ROWS =================
 
-  // ================= DIVIDER =================
+//   row: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "flex-start",
+//     marginVertical: 7,
+//   },
 
-  divider: {
-    height: 1,
-    backgroundColor: "#E6EAF0",
-    marginVertical: 17,
-  },
+//   label: {
+//     color: Colors.textSecondary,
+//     fontSize: 14,
+//     flex: 1,
+//   },
 
+//   value: {
+//     color: Colors.primary,
+//     fontWeight: "600",
+//     fontSize: 15,
+//     flex: 1,
+//   },
 
-  // ================= INFORMATION =================
+//   valueRight: {
+//     color: Colors.primary,
+//     fontWeight: "600",
+//     fontSize: 15,
+//     flex: 1,
+//     textAlign: "right",
+//     marginLeft: 12,
+//   },
 
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 7,
-  },
 
-  infoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 11,
-  },
+//   // ================= PAYMENT =================
 
-  infoText: {
-    flex: 1,
-  },
+//   paymentBadge: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     backgroundColor: "#EAF7EF",
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//     borderRadius: 15,
+//   },
 
+//   paymentText: {
+//     color: Colors.success,
+//     fontSize: 13,
+//     fontWeight: "700",
+//     marginLeft: 5,
+//   },
 
-  // ================= SECTIONS =================
 
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
+//   // ================= TOTAL =================
 
-  sectionIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#EEF5FB",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
+//   totalContainer: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "center",
+//     backgroundColor: "#F7F9FB",
+//     borderRadius: 15,
+//     padding: 15,
+//     marginTop: 5,
+//   },
 
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
+//   totalLabel: {
+//     fontSize: 18,
+//     fontWeight: "700",
+//     color: Colors.primary,
+//   },
 
+//   totalSubtext: {
+//     fontSize: 12,
+//     color: Colors.textSecondary,
+//     marginTop: 3,
+//   },
 
-  // ================= ROWS =================
+//   totalPrice: {
+//     fontSize: 26,
+//     fontWeight: "700",
+//     color: Colors.rider,
+//   },
 
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginVertical: 7,
-  },
 
-  label: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    flex: 1,
-  },
+//   // ================= PRIMARY BUTTON =================
 
-  value: {
-    color: Colors.primary,
-    fontWeight: "600",
-    fontSize: 15,
-    flex: 1,
-  },
+//   primaryButton: {
+//     width: "100%",
+//     height: 58,
+//     backgroundColor: Colors.rider,
+//     borderRadius: 16,
+//     marginTop: 25,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     flexDirection: "row",
+//     elevation: 3,
+//     position: "relative",
+//   },
 
-  valueRight: {
-    color: Colors.primary,
-    fontWeight: "600",
-    fontSize: 15,
-    flex: 1,
-    textAlign: "right",
-    marginLeft: 12,
-  },
+//   primaryButtonText: {
+//     color: Colors.white,
+//     fontSize: 17,
+//     fontWeight: "700",
+//     marginLeft: 8,
+//   },
 
+//   buttonArrow: {
+//     position: "absolute",
+//     right: 18,
+//   },
 
-  // ================= PAYMENT =================
 
-  paymentBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#EAF7EF",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
+//   // ================= SECONDARY BUTTON =================
 
-  paymentText: {
-    color: Colors.success,
-    fontSize: 13,
-    fontWeight: "700",
-    marginLeft: 5,
-  },
+//   secondaryButton: {
+//     width: "100%",
+//     height: 58,
+//     borderRadius: 16,
+//     borderWidth: 2,
+//     borderColor: Colors.rider,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     flexDirection: "row",
+//     marginTop: 13,
+//   },
 
+//   secondaryButtonText: {
+//     color: Colors.rider,
+//     fontSize: 17,
+//     fontWeight: "700",
+//     marginLeft: 8,
+//   },
 
-  // ================= TOTAL =================
 
-  totalContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#F7F9FB",
-    borderRadius: 15,
-    padding: 15,
-    marginTop: 5,
-  },
+//   // ================= RATE BUTTON =================
 
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
+//   rateButton: {
+//     width: "100%",
+//     height: 58,
+//     backgroundColor: Colors.primary,
+//     borderRadius: 16,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     flexDirection: "row",
+//     marginTop: 13,
+//     marginBottom: 20,
+//     elevation: 3,
+//   },
 
-  totalSubtext: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 3,
-  },
+//   rateButtonText: {
+//     color: Colors.white,
+//     fontSize: 17,
+//     fontWeight: "700",
+//     marginLeft: 8,
+//   },
 
-  totalPrice: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: Colors.rider,
-  },
 
+//   // ==================================================
+//   // RATING MODAL
+//   // ==================================================
 
-  // ================= PRIMARY BUTTON =================
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: "rgba(0,0,0,0.55)",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     padding: 20,
+//   },
 
-  primaryButton: {
-    width: "100%",
-    height: 58,
-    backgroundColor: Colors.rider,
-    borderRadius: 16,
-    marginTop: 25,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-    elevation: 3,
-    position: "relative",
-  },
+//   ratingModal: {
+//     width: "100%",
+//     maxWidth: 400,
+//     backgroundColor: Colors.white,
+//     borderRadius: 25,
+//     padding: 25,
+//     alignItems: "center",
+//     elevation: 10,
+//   },
 
-  primaryButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
+//   closeButton: {
+//     position: "absolute",
+//     top: 14,
+//     right: 14,
+//     width: 36,
+//     height: 36,
+//     borderRadius: 18,
+//     backgroundColor: Colors.background,
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
 
-  buttonArrow: {
-    position: "absolute",
-    right: 18,
-  },
+//   ratingIcon: {
+//     width: 70,
+//     height: 70,
+//     borderRadius: 35,
+//     backgroundColor: "#FFF4CC",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginTop: 10,
+//   },
 
+//   ratingTitle: {
+//     fontSize: 25,
+//     fontWeight: "700",
+//     color: Colors.primary,
+//     marginTop: 15,
+//   },
 
-  // ================= SECONDARY BUTTON =================
+//   ratingSubtitle: {
+//     textAlign: "center",
+//     color: Colors.textSecondary,
+//     fontSize: 15,
+//     marginTop: 8,
+//     marginBottom: 20,
+//     lineHeight: 21,
+//   },
 
-  secondaryButton: {
-    width: "100%",
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Colors.rider,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 13,
-  },
 
-  secondaryButtonText: {
-    color: Colors.rider,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
+//   // ================= STARS =================
 
+//   starContainer: {
+//     flexDirection: "row",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginBottom: 8,
+//   },
 
-  // ================= RATE BUTTON =================
+//   ratingText: {
+//     fontSize: 15,
+//     fontWeight: "600",
+//     color: Colors.rider,
+//     marginBottom: 20,
+//   },
 
-  rateButton: {
-    width: "100%",
-    height: 58,
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 13,
-    marginBottom: 20,
-    elevation: 3,
-  },
 
-  rateButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
+//   // ================= COMMENT =================
 
+//   commentInput: {
+//     width: "100%",
+//     minHeight: 90,
+//     borderWidth: 1,
+//     borderColor: "#E1E5EA",
+//     borderRadius: 15,
+//     padding: 14,
+//     fontSize: 15,
+//     color: Colors.primary,
+//     marginBottom: 18,
+//     backgroundColor: "#FAFBFC",
+//   },
 
-  // ==================================================
-  // RATING MODAL
-  // ==================================================
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
+//   // ================= SUBMIT =================
 
-  ratingModal: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: Colors.white,
-    borderRadius: 25,
-    padding: 25,
-    alignItems: "center",
-    elevation: 10,
-  },
+//   submitRatingButton: {
+//     width: "100%",
+//     height: 55,
+//     backgroundColor: Colors.rider,
+//     borderRadius: 14,
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
 
-  closeButton: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+//   disabledButton: {
+//     opacity: 0.45,
+//   },
 
-  ratingIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "#FFF4CC",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-  },
+//   submitRatingText: {
+//     color: Colors.white,
+//     fontSize: 16,
+//     fontWeight: "700",
+//   },
 
-  ratingTitle: {
-    fontSize: 25,
-    fontWeight: "700",
-    color: Colors.primary,
-    marginTop: 15,
-  },
+//   laterText: {
+//     color: Colors.textSecondary,
+//     fontSize: 15,
+//     fontWeight: "600",
+//     marginTop: 18,
+//   },
 
-  ratingSubtitle: {
-    textAlign: "center",
-    color: Colors.textSecondary,
-    fontSize: 15,
-    marginTop: 8,
-    marginBottom: 20,
-    lineHeight: 21,
-  },
-
-
-  // ================= STARS =================
-
-  starContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-
-  ratingText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.rider,
-    marginBottom: 20,
-  },
-
-
-  // ================= COMMENT =================
-
-  commentInput: {
-    width: "100%",
-    minHeight: 90,
-    borderWidth: 1,
-    borderColor: "#E1E5EA",
-    borderRadius: 15,
-    padding: 14,
-    fontSize: 15,
-    color: Colors.primary,
-    marginBottom: 18,
-    backgroundColor: "#FAFBFC",
-  },
-
-
-  // ================= SUBMIT =================
-
-  submitRatingButton: {
-    width: "100%",
-    height: 55,
-    backgroundColor: Colors.rider,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  disabledButton: {
-    opacity: 0.45,
-  },
-
-  submitRatingText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  laterText: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-    fontWeight: "600",
-    marginTop: 18,
-  },
-
-});
+// });

@@ -29,10 +29,11 @@ import {
 import { supabase } from "../../lib/supabaseClient";
 
 
-type NavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "CreateRideOffer"
->;
+type NavigationProp =
+  NativeStackNavigationProp<
+    RootStackParamList,
+    "CreateRideOffer"
+  >;
 
 
 export default function CreateRideOfferScreen() {
@@ -41,23 +42,102 @@ export default function CreateRideOfferScreen() {
     useNavigation<NavigationProp>();
 
 
-  const [pickup, setPickup] = useState("");
+  // ==================================================
+  // RIDE STATES
+  // ==================================================
+
+  const [pickup, setPickup] =
+    useState("");
 
   const [destination, setDestination] =
     useState("");
 
-  const [date, setDate] = useState("");
+  const [rideDate, setRideDate] =
+    useState("");
 
-  const [time, setTime] = useState("");
+  const [departureTime, setDepartureTime] =
+    useState("");
 
-  const [price, setPrice] = useState("");
+  const [availableSeats, setAvailableSeats] =
+    useState("");
 
-  const [seats, setSeats] = useState("");
+  const [estimatedFare, setEstimatedFare] =
+    useState<number | null>(null);
 
-  const [notes, setNotes] = useState("");
+  const [driverFare, setDriverFare] =
+    useState("");
 
-  const [saving, setSaving] =
+  const [fareAccepted, setFareAccepted] =
     useState(false);
+
+  const [creatingRide, setCreatingRide] =
+    useState(false);
+
+
+  // ==================================================
+  // SHOW ROUTE / ESTIMATE FARE
+  // ==================================================
+
+  const createRoute = () => {
+
+    if (
+      !pickup.trim() ||
+      !destination.trim()
+    ) {
+
+      Alert.alert(
+        "Missing Route",
+        "Please enter both a starting point and destination."
+      );
+
+      return;
+    }
+
+
+    // Same estimated fare used on Home page
+    const calculatedFare =
+      35;
+
+
+    setEstimatedFare(
+      calculatedFare
+    );
+
+    setDriverFare(
+      String(calculatedFare)
+    );
+
+    setFareAccepted(
+      false
+    );
+
+  };
+
+
+  // ==================================================
+  // ACCEPT ESTIMATED FARE
+  // ==================================================
+
+  const acceptEstimatedFare = () => {
+
+    if (
+      estimatedFare === null
+    ) {
+
+      return;
+
+    }
+
+
+    setDriverFare(
+      String(estimatedFare)
+    );
+
+    setFareAccepted(
+      true
+    );
+
+  };
 
 
   // ==================================================
@@ -67,51 +147,79 @@ export default function CreateRideOfferScreen() {
   const handleCreateRide = async () => {
 
     // ------------------------------------------------
-    // VALIDATION
+    // REQUIRED INFORMATION
     // ------------------------------------------------
 
     if (
       !pickup.trim() ||
-      !destination.trim() ||
-      !date.trim() ||
-      !time.trim() ||
-      !price.trim() ||
-      !seats.trim()
+      !destination.trim()
     ) {
 
       Alert.alert(
         "Missing Information",
-        "Please complete all required ride details."
+        "Please enter your pickup location and destination."
       );
 
       return;
+
     }
 
 
-    const numericPrice =
-      Number(price.replace("R", "").trim());
-
-    const numericSeats =
-      Number(seats);
-
-
     if (
-      Number.isNaN(numericPrice) ||
-      numericPrice <= 0
+      !rideDate.trim() ||
+      !departureTime.trim()
     ) {
 
       Alert.alert(
-        "Invalid Price",
-        "Please enter a valid price."
+        "Missing Information",
+        "Please enter the ride date and departure time."
       );
 
       return;
+
     }
 
 
     if (
-      Number.isNaN(numericSeats) ||
-      numericSeats <= 0
+      !availableSeats.trim()
+    ) {
+
+      Alert.alert(
+        "Missing Information",
+        "Please enter the number of available seats."
+      );
+
+      return;
+
+    }
+
+
+    const fare =
+      Number(driverFare);
+
+
+    if (
+      !fare ||
+      fare <= 0
+    ) {
+
+      Alert.alert(
+        "Invalid Fare",
+        "Please enter a valid fare per passenger."
+      );
+
+      return;
+
+    }
+
+
+    const seats =
+      Number(availableSeats);
+
+
+    if (
+      !seats ||
+      seats <= 0
     ) {
 
       Alert.alert(
@@ -120,12 +228,15 @@ export default function CreateRideOfferScreen() {
       );
 
       return;
+
     }
 
 
     try {
 
-      setSaving(true);
+      setCreatingRide(
+        true
+      );
 
 
       // ------------------------------------------------
@@ -141,7 +252,10 @@ export default function CreateRideOfferScreen() {
         await supabase.auth.getUser();
 
 
-      if (userError || !user) {
+      if (
+        userError ||
+        !user
+      ) {
 
         console.error(
           "Authentication error:",
@@ -149,32 +263,31 @@ export default function CreateRideOfferScreen() {
         );
 
         Alert.alert(
-          "Authentication Error",
-          "Please log in again before creating a ride offer."
+          "Session Error",
+          "You are not logged in."
         );
 
         return;
+
       }
 
 
-      console.log(
-        "Creating ride for driver:",
-        user.id
-      );
-
-
       // ------------------------------------------------
-      // SAVE RIDE TO SUPABASE
+      // CREATE RIDE IN SUPABASE
       // ------------------------------------------------
 
       const {
-        data: ride,
-        error: rideError,
+        data,
+        error,
       } =
         await supabase
+
           .from("rides")
+
           .insert({
-            driver_id: user.id,
+
+            driver_id:
+              user.id,
 
             pickup_location:
               pickup.trim(),
@@ -183,65 +296,80 @@ export default function CreateRideOfferScreen() {
               destination.trim(),
 
             fare:
-              numericPrice,
+              fare,
 
             status:
-              "requested",
+              "available",
 
             ride_date:
-              date.trim(),
+              rideDate.trim(),
 
             departure_time:
-              time.trim(),
+              departureTime.trim(),
 
             available_seats:
-              numericSeats,
+              seats,
 
             notes:
-              notes.trim(),
+              null,
+
           })
-          .select()
+
+          .select("id")
+
           .single();
 
 
       // ------------------------------------------------
-      // CHECK IF RIDE WAS SAVED
+      // CHECK DATABASE RESULT
       // ------------------------------------------------
 
-      if (rideError) {
+      if (error) {
 
         console.error(
           "Ride creation error:",
-          rideError.message
+          error.message
         );
 
         Alert.alert(
           "Ride Creation Failed",
-          rideError.message
+          error.message
         );
 
         return;
+
       }
 
 
-      // ------------------------------------------------
-      // CONFIRM DATABASE SAVE
-      // ------------------------------------------------
+      if (
+        !data?.id
+      ) {
+
+        Alert.alert(
+          "Error",
+          "The ride was created but no ride ID was returned."
+        );
+
+        return;
+
+      }
+
 
       console.log(
-        "Ride saved to Supabase:",
-        ride
+        "Created ride ID:",
+        data.id
       );
 
 
       // ------------------------------------------------
-      // SUCCESS
+      // GO TO RIDE CONFIRMATION
       // ------------------------------------------------
 
       navigation.navigate(
-        "RideOfferConfirmation",
+        "RideConfirmation",
         {
-          rideId: ride.id,
+          rideId:
+            data.id,
         }
       );
 
@@ -255,35 +383,47 @@ export default function CreateRideOfferScreen() {
 
       Alert.alert(
         "Error",
-        "Something went wrong while saving the ride offer."
+        "Could not create the ride offer."
       );
 
     } finally {
 
-      setSaving(false);
+      setCreatingRide(
+        false
+      );
 
     }
+
   };
 
 
   return (
 
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={
+          styles.content
+        }
+        keyboardShouldPersistTaps="handled"
       >
 
-        {/* ================= BACK BUTTON ================= */}
+        {/* ==================================================
+            BACK BUTTON
+        ================================================== */}
 
         <TouchableOpacity
           style={styles.backButton}
           onPress={() =>
-            navigation.navigate("DriverHome")
+            navigation.navigate(
+              "DriverHome"
+            )
           }
           activeOpacity={0.7}
-          disabled={saving}
+          disabled={creatingRide}
         >
 
           <Ionicons
@@ -295,23 +435,34 @@ export default function CreateRideOfferScreen() {
         </TouchableOpacity>
 
 
-        {/* ================= HEADER ================= */}
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
-        <Text style={styles.heading}>
-          Create Ride Offer
+        <Text
+          style={styles.heading}
+        >
+          Create a Ride
         </Text>
 
-        <Text style={styles.subtitle}>
-          Enter your trip details to make your
-          ride available to passengers.
+        <Text
+          style={styles.subtitle}
+        >
+          Enter your trip details
         </Text>
 
 
-        {/* ================= FORM CARD ================= */}
+        {/* ==================================================
+            FORM CARD
+        ================================================== */}
 
-        <View style={styles.formCard}>
+        <View
+          style={styles.formCard}
+        >
 
-          {/* Pickup */}
+          {/* ==================================================
+              PICKUP
+          ================================================== */}
 
           <InputField
             label="Pickup Location"
@@ -322,7 +473,9 @@ export default function CreateRideOfferScreen() {
           />
 
 
-          {/* Destination */}
+          {/* ==================================================
+              DESTINATION
+          ================================================== */}
 
           <InputField
             label="Destination"
@@ -333,104 +486,227 @@ export default function CreateRideOfferScreen() {
           />
 
 
-          {/* Date */}
+          {/* ==================================================
+              SHOW ROUTE
+          ================================================== */}
+
+          <TouchableOpacity
+            style={styles.routeButton}
+            onPress={createRoute}
+            activeOpacity={0.8}
+          >
+
+            <Ionicons
+              name="navigate-outline"
+              size={21}
+              color={Colors.white}
+            />
+
+            <Text
+              style={styles.routeButtonText}
+            >
+              Show Route
+            </Text>
+
+          </TouchableOpacity>
+
+
+          {/* ==================================================
+              ESTIMATED FARE
+          ================================================== */}
+
+          {estimatedFare !== null && (
+
+            <View
+              style={styles.fareCard}
+            >
+
+              <View>
+
+                <Text
+                  style={styles.fareTitle}
+                >
+                  Estimated Fare
+                </Text>
+
+                <Text
+                  style={styles.fareAmount}
+                >
+                  R{estimatedFare}
+                </Text>
+
+              </View>
+
+
+              {!fareAccepted && (
+
+                <TouchableOpacity
+                  style={
+                    styles.acceptButton
+                  }
+                  onPress={
+                    acceptEstimatedFare
+                  }
+                  activeOpacity={0.8}
+                >
+
+                  <Text
+                    style={
+                      styles.acceptButtonText
+                    }
+                  >
+                    Accept
+                  </Text>
+
+                </TouchableOpacity>
+
+              )}
+
+
+              {fareAccepted && (
+
+                <View
+                  style={
+                    styles.acceptedBadge
+                  }
+                >
+
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={
+                      Colors.success
+                    }
+                  />
+
+                  <Text
+                    style={
+                      styles.acceptedText
+                    }
+                  >
+                    Accepted
+                  </Text>
+
+                </View>
+
+              )}
+
+            </View>
+
+          )}
+
+
+          {/* ==================================================
+              RIDE DATE
+          ================================================== */}
 
           <InputField
-            label="Date"
+            label="Ride Date"
             icon="calendar-outline"
             placeholder="YYYY-MM-DD"
-            value={date}
-            onChangeText={setDate}
+            value={rideDate}
+            onChangeText={setRideDate}
           />
 
 
-          {/* Time */}
+          {/* ==================================================
+              DEPARTURE TIME
+          ================================================== */}
 
           <InputField
             label="Departure Time"
             icon="time-outline"
             placeholder="08:30 AM"
-            value={time}
-            onChangeText={setTime}
+            value={departureTime}
+            onChangeText={setDepartureTime}
           />
 
 
-          {/* Seats */}
+          {/* ==================================================
+              AVAILABLE SEATS
+          ================================================== */}
 
           <InputField
             label="Available Seats"
             icon="people-outline"
             placeholder="Number of seats"
-            value={seats}
-            onChangeText={setSeats}
+            value={availableSeats}
+            onChangeText={
+              setAvailableSeats
+            }
             keyboardType="numeric"
           />
 
 
-          {/* Price */}
+          {/* ==================================================
+              FARE PER PASSENGER
+          ================================================== */}
 
           <InputField
-            label="Price Per Passenger"
+            label="Fare Per Passenger"
             icon="cash-outline"
-            placeholder="R120"
-            value={price}
-            onChangeText={setPrice}
+            placeholder="Enter fare"
+            value={driverFare}
+            onChangeText={setDriverFare}
             keyboardType="numeric"
-          />
-
-
-          {/* Notes */}
-
-          <Text style={styles.label}>
-            Additional Notes
-          </Text>
-
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Any extra information..."
-            placeholderTextColor={
-              Colors.textSecondary
-            }
-            multiline
-            numberOfLines={4}
-            value={notes}
-            onChangeText={setNotes}
-            textAlignVertical="top"
           />
 
         </View>
 
 
-        {/* ================= CREATE BUTTON ================= */}
+        {/* ==================================================
+            CREATE RIDE BUTTON
+        ================================================== */}
 
         <TouchableOpacity
           style={[
             styles.createButton,
-            saving && styles.disabledButton,
+            creatingRide &&
+              styles.disabledButton,
           ]}
-          onPress={handleCreateRide}
+          onPress={
+            handleCreateRide
+          }
+          disabled={
+            creatingRide
+          }
           activeOpacity={0.8}
-          disabled={saving}
         >
 
-          {saving ? (
+          {creatingRide ? (
 
-            <ActivityIndicator
-              size="small"
-              color={Colors.white}
-            />
+            <>
+
+              <ActivityIndicator
+                size="small"
+                color={Colors.white}
+              />
+
+              <Text
+                style={
+                  styles.createButtonText
+                }
+              >
+                Creating Ride...
+              </Text>
+
+            </>
 
           ) : (
 
             <>
 
               <Ionicons
-                name="checkmark-circle-outline"
-                size={23}
+                name="car-outline"
+                size={22}
                 color={Colors.white}
               />
 
-              <Text style={styles.createButtonText}>
+              <Text
+                style={
+                  styles.createButtonText
+                }
+              >
                 Create Ride Offer
               </Text>
 
@@ -441,28 +717,35 @@ export default function CreateRideOfferScreen() {
         </TouchableOpacity>
 
 
-        {/* ================= CANCEL ================= */}
+        {/* ==================================================
+            CANCEL
+        ================================================== */}
 
         <TouchableOpacity
           style={styles.cancelButton}
           onPress={() =>
-            navigation.navigate("DriverHome")
+            navigation.navigate(
+              "DriverHome"
+            )
           }
           activeOpacity={0.7}
-          disabled={saving}
+          disabled={creatingRide}
         >
 
-          <Text style={styles.cancelText}>
+          <Text
+            style={styles.cancelText}
+          >
             Cancel
           </Text>
 
         </TouchableOpacity>
 
-
       </ScrollView>
 
     </SafeAreaView>
+
   );
+
 }
 
 
@@ -474,13 +757,15 @@ interface InputFieldProps {
 
   label: string;
 
-  icon: keyof typeof Ionicons.glyphMap;
+  icon:
+    keyof typeof Ionicons.glyphMap;
 
   placeholder: string;
 
   value: string;
 
-  onChangeText: (text: string) => void;
+  onChangeText:
+    (text: string) => void;
 
   keyboardType?:
     | "default"
@@ -508,13 +793,19 @@ function InputField({
 
   return (
 
-    <View style={styles.inputContainer}>
+    <View
+      style={styles.inputContainer}
+    >
 
-      <Text style={styles.label}>
+      <Text
+        style={styles.label}
+      >
         {label}
       </Text>
 
-      <View style={styles.inputWrapper}>
+      <View
+        style={styles.inputWrapper}
+      >
 
         <Ionicons
           name={icon}
@@ -529,14 +820,20 @@ function InputField({
             Colors.textSecondary
           }
           value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
+          onChangeText={
+            onChangeText
+          }
+          keyboardType={
+            keyboardType
+          }
         />
 
       </View>
 
     </View>
+
   );
+
 }
 
 
@@ -544,215 +841,486 @@ function InputField({
 // STYLES
 // ==================================================
 
-const styles = StyleSheet.create({
+const styles =
+  StyleSheet.create({
 
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+    container: {
 
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 40,
-  },
+      flex: 1,
 
+      backgroundColor:
+        Colors.background,
 
-  // =================================================
-  // BACK BUTTON
-  // =================================================
-
-  backButton: {
-    width: 45,
-    height: 45,
-
-    borderRadius: 23,
-
-    backgroundColor: Colors.white,
-
-    justifyContent: "center",
-    alignItems: "center",
-
-    marginBottom: 18,
-
-    elevation: 3,
-
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-
-    shadowOffset: {
-      width: 0,
-      height: 2,
     },
-  },
 
 
-  // =================================================
-  // HEADER
-  // =================================================
+    content: {
 
-  heading: {
-    fontSize: 30,
+      paddingHorizontal:
+        20,
 
-    fontWeight: "700",
+      paddingTop:
+        15,
 
-    color: Colors.primary,
-  },
+      paddingBottom:
+        40,
 
-  subtitle: {
-    marginTop: 6,
-
-    marginBottom: 25,
-
-    color: Colors.textSecondary,
-
-    fontSize: 15,
-
-    lineHeight: 21,
-  },
-
-
-  // =================================================
-  // FORM
-  // =================================================
-
-  formCard: {
-    backgroundColor: Colors.white,
-
-    borderRadius: 20,
-
-    padding: 20,
-
-    elevation: 4,
-
-    shadowOpacity: 0.05,
-
-    shadowRadius: 7,
-
-    shadowOffset: {
-      width: 0,
-      height: 3,
     },
-  },
-
-  inputContainer: {
-    marginBottom: 17,
-  },
-
-  label: {
-    fontSize: 14,
-
-    fontWeight: "700",
-
-    color: Colors.primary,
-
-    marginBottom: 8,
-  },
-
-  inputWrapper: {
-    height: 53,
-
-    backgroundColor: "#F7F9FC",
-
-    borderRadius: 14,
-
-    borderWidth: 1,
-
-    borderColor: "#E6EAF0",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    paddingHorizontal: 15,
-  },
-
-  input: {
-    flex: 1,
-
-    marginLeft: 10,
-
-    color: Colors.primary,
-
-    fontSize: 15,
-  },
-
-  notesInput: {
-    backgroundColor: "#F7F9FC",
-
-    borderRadius: 14,
-
-    borderWidth: 1,
-
-    borderColor: "#E6EAF0",
-
-    minHeight: 115,
-
-    padding: 15,
-
-    color: Colors.primary,
-
-    fontSize: 15,
-
-    marginBottom: 2,
-  },
 
 
-  // =================================================
-  // CREATE BUTTON
-  // =================================================
+    // =================================================
+    // BACK BUTTON
+    // =================================================
 
-  createButton: {
-    height: 58,
+    backButton: {
 
-    backgroundColor: Colors.driver,
+      width:
+        45,
 
-    borderRadius: 16,
+      height:
+        45,
 
-    justifyContent: "center",
-    alignItems: "center",
+      borderRadius:
+        23,
 
-    flexDirection: "row",
+      backgroundColor:
+        Colors.white,
 
-    marginTop: 25,
+      justifyContent:
+        "center",
 
-    elevation: 2,
-  },
+      alignItems:
+        "center",
 
-  disabledButton: {
-    opacity: 0.7,
-  },
+      marginBottom:
+        18,
 
-  createButtonText: {
-    color: Colors.white,
+      elevation:
+        3,
 
-    fontSize: 17,
+      shadowOpacity:
+        0.08,
 
-    fontWeight: "700",
+      shadowRadius:
+        5,
 
-    marginLeft: 9,
-  },
+      shadowOffset: {
+
+        width:
+          0,
+
+        height:
+          2,
+
+      },
+
+    },
 
 
-  // =================================================
-  // CANCEL
-  // =================================================
+    // =================================================
+    // HEADER
+    // =================================================
 
-  cancelButton: {
-    height: 52,
+    heading: {
 
-    justifyContent: "center",
-    alignItems: "center",
+      fontSize:
+        30,
 
-    marginTop: 8,
-  },
+      fontWeight:
+        "700",
 
-  cancelText: {
-    fontSize: 15,
+      color:
+        Colors.primary,
 
-    fontWeight: "600",
+    },
 
-    color: Colors.textSecondary,
-  },
 
-});
+    subtitle: {
+
+      marginTop:
+        6,
+
+      marginBottom:
+        25,
+
+      color:
+        Colors.textSecondary,
+
+      fontSize:
+        15,
+
+      lineHeight:
+        21,
+
+    },
+
+
+    // =================================================
+    // FORM
+    // =================================================
+
+    formCard: {
+
+      backgroundColor:
+        Colors.white,
+
+      borderRadius:
+        20,
+
+      padding:
+        20,
+
+      elevation:
+        4,
+
+      shadowOpacity:
+        0.05,
+
+      shadowRadius:
+        7,
+
+      shadowOffset: {
+
+        width:
+          0,
+
+        height:
+          3,
+
+      },
+
+    },
+
+
+    inputContainer: {
+
+      marginBottom:
+        17,
+
+    },
+
+
+    label: {
+
+      fontSize:
+        14,
+
+      fontWeight:
+        "700",
+
+      color:
+        Colors.primary,
+
+      marginBottom:
+        8,
+
+    },
+
+
+    inputWrapper: {
+
+      height:
+        53,
+
+      backgroundColor:
+        "#F7F9FC",
+
+      borderRadius:
+        14,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E6EAF0",
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      paddingHorizontal:
+        15,
+
+    },
+
+
+    input: {
+
+      flex:
+        1,
+
+      marginLeft:
+        10,
+
+      color:
+        Colors.primary,
+
+      fontSize:
+        15,
+
+    },
+
+
+    // =================================================
+    // ROUTE BUTTON
+    // =================================================
+
+    routeButton: {
+
+      height:
+        54,
+
+      backgroundColor:
+        Colors.driver,
+
+      borderRadius:
+        15,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      marginTop:
+        5,
+
+      marginBottom:
+        15,
+
+    },
+
+
+    routeButtonText: {
+
+      color:
+        Colors.white,
+
+      fontSize:
+        16,
+
+      fontWeight:
+        "700",
+
+      marginLeft:
+        8,
+
+    },
+
+
+    // =================================================
+    // FARE CARD
+    // =================================================
+
+    fareCard: {
+
+      backgroundColor:
+        "#F7F9FC",
+
+      borderRadius:
+        16,
+
+      padding:
+        16,
+
+      marginBottom:
+        10,
+
+      flexDirection:
+        "row",
+
+      justifyContent:
+        "space-between",
+
+      alignItems:
+        "center",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E6EAF0",
+
+    },
+
+
+    fareTitle: {
+
+      fontSize:
+        13,
+
+      color:
+        Colors.textSecondary,
+
+    },
+
+
+    fareAmount: {
+
+      fontSize:
+        25,
+
+      fontWeight:
+        "700",
+
+      color:
+        Colors.driver,
+
+      marginTop:
+        2,
+
+    },
+
+
+    acceptButton: {
+
+      backgroundColor:
+        Colors.driver,
+
+      paddingHorizontal:
+        18,
+
+      paddingVertical:
+        10,
+
+      borderRadius:
+        10,
+
+    },
+
+
+    acceptButtonText: {
+
+      color:
+        Colors.white,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    acceptedBadge: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+    },
+
+
+    acceptedText: {
+
+      color:
+        Colors.success,
+
+      fontWeight:
+        "700",
+
+      marginLeft:
+        5,
+
+    },
+
+
+    // =================================================
+    // CREATE BUTTON
+    // =================================================
+
+    createButton: {
+
+      height:
+        58,
+
+      backgroundColor:
+        Colors.driver,
+
+      borderRadius:
+        16,
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      flexDirection:
+        "row",
+
+      marginTop:
+        25,
+
+      elevation:
+        2,
+
+    },
+
+
+    disabledButton: {
+
+      opacity:
+        0.7,
+
+    },
+
+
+    createButtonText: {
+
+      color:
+        Colors.white,
+
+      fontSize:
+        17,
+
+      fontWeight:
+        "700",
+
+      marginLeft:
+        9,
+
+    },
+
+
+    // =================================================
+    // CANCEL
+    // =================================================
+
+    cancelButton: {
+
+      height:
+        52,
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      marginTop:
+        8,
+
+    },
+
+
+    cancelText: {
+
+      fontSize:
+        15,
+
+      fontWeight:
+        "600",
+
+      color:
+        Colors.textSecondary,
+
+    },
+
+  });
+

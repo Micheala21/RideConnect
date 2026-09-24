@@ -1,31 +1,21 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React from "react";
 
 import {
   SafeAreaView,
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
-  Alert,
 } from "react-native";
 
-import { Ionicons } from "@expo/vector-icons";
+import {
+  Ionicons,
+} from "@expo/vector-icons";
 
 import {
-  NativeStackNavigationProp,
+  NativeStackScreenProps,
 } from "@react-navigation/native-stack";
-
-import {
-  useNavigation,
-  useRoute,
-  RouteProp,
-} from "@react-navigation/native";
 
 import Colors from "../../constants/colors";
 
@@ -33,27 +23,15 @@ import {
   RootStackParamList,
 } from "../../navigation/AppNavigator";
 
-import { supabase } from "../../lib/supabaseClient";
-
 
 // ======================================================
-// NAVIGATION
+// PROPS
 // ======================================================
 
-type NavigationProp =
-  NativeStackNavigationProp<
-    RootStackParamList
-  >;
-
-
-// ======================================================
-// ROUTE
-// ======================================================
-
-type RideDetailsRouteProp =
-  RouteProp<
+type Props =
+  NativeStackScreenProps<
     RootStackParamList,
-    "RideDetails"
+    "ConfirmBooking"
   >;
 
 
@@ -61,14 +39,10 @@ type RideDetailsRouteProp =
 // SCREEN
 // ======================================================
 
-export default function RideDetailsScreen() {
-
-  const navigation =
-    useNavigation<NavigationProp>();
-
-  const route =
-    useRoute<RideDetailsRouteProp>();
-
+export default function ConfirmBookingScreen({
+  route,
+  navigation,
+}: Props) {
 
   const {
     ride,
@@ -76,236 +50,20 @@ export default function RideDetailsScreen() {
 
 
   // ====================================================
-  // DRIVER VEHICLE INFORMATION
+  // CONTINUE TO PAYMENT
   // ====================================================
 
-  const [
-    vehicleMake,
-    setVehicleMake,
-  ] =
-    useState("");
+  const continueToPayment = () => {
 
-
-  const [
-    vehicleModel,
-    setVehicleModel,
-  ] =
-    useState("");
-
-
-  const [
-    registrationNumber,
-    setRegistrationNumber,
-  ] =
-    useState("");
-
-
-  const [
-    availableSeats,
-    setAvailableSeats,
-  ] =
-    useState(
-      ride.available_seats,
+    navigation.navigate(
+      "PaymentMethod",
+      {
+        rideId:
+          ride.id,
+      },
     );
 
-
-  const [
-    loadingDriver,
-    setLoadingDriver,
-  ] =
-    useState(true);
-
-
-  // ====================================================
-  // LOAD DRIVER INFORMATION
-  // ====================================================
-
-  useEffect(() => {
-
-    const loadDriverInformation =
-      async () => {
-
-        try {
-
-          const {
-            data,
-            error,
-          } =
-            await supabase
-              .from(
-                "driver_profiles",
-              )
-              .select(
-                `
-                  vehicle_make,
-                  vehicle_model,
-                  registration_number,
-                  available_seats
-                `,
-              )
-              .eq(
-                "id",
-                ride.driver_id,
-              )
-              .maybeSingle();
-
-
-          if (error) {
-
-            console.error(
-              "Driver information error:",
-              error.message,
-            );
-
-            return;
-
-          }
-
-
-          if (data) {
-
-            setVehicleMake(
-              data.vehicle_make ||
-                "",
-            );
-
-            setVehicleModel(
-              data.vehicle_model ||
-                "",
-            );
-
-            setRegistrationNumber(
-              data.registration_number ||
-                "",
-            );
-
-            setAvailableSeats(
-              data.available_seats ??
-                ride.available_seats,
-            );
-
-          }
-
-        } catch (error) {
-
-          console.error(
-            "Load driver information error:",
-            error,
-          );
-
-        } finally {
-
-          setLoadingDriver(
-            false,
-          );
-
-        }
-
-      };
-
-
-    loadDriverInformation();
-
-  }, [ride.driver_id]);
-
-
-  // ====================================================
-  // REALTIME RIDE DELETION
-  // ====================================================
-
-  useEffect(() => {
-
-    let active = true;
-
-
-    const channel =
-      supabase
-        .channel(
-          `ride-deletion-${ride.id}`,
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "DELETE",
-
-            schema: "public",
-
-            table: "rides",
-
-            filter:
-              `id=eq.${ride.id}`,
-          },
-
-          () => {
-
-            if (!active) {
-              return;
-            }
-
-
-            console.log(
-              "RIDE DELETED:",
-              ride.id,
-            );
-
-
-            Alert.alert(
-              "Ride No Longer Available",
-              "This ride has been cancelled by the driver.",
-              [
-                {
-                  text: "OK",
-
-                  onPress: () =>
-                    navigation.navigate(
-                      "RiderHome",
-                    ),
-                },
-              ],
-            );
-
-          },
-        )
-        .subscribe(
-          status => {
-
-            console.log(
-              "Ride deletion realtime status:",
-              status,
-            );
-
-          },
-        );
-
-
-    // ==================================================
-    // CLEANUP
-    // ==================================================
-
-    return () => {
-
-      active = false;
-
-      supabase.removeChannel(
-        channel,
-      );
-
-    };
-
-  }, [ride.id]);
-
-
-  // ====================================================
-  // VEHICLE NAME
-  // ====================================================
-
-  const vehicleName =
-    [
-      vehicleMake,
-      vehicleModel,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  };
 
 
   // ====================================================
@@ -360,65 +118,54 @@ export default function RideDetailsScreen() {
 
 
         {/* ============================================ */}
-        {/* DRIVER HEADER */}
+        {/* HEADER */}
         {/* ============================================ */}
 
         <View
           style={
-            styles.driverHeader
+            styles.header
           }
         >
 
-          <Image
-            source={{
-              uri:
-                "https://placehold.co/200x200",
-            }}
-
-            style={
-              styles.avatar
-            }
-          />
-
-
-          <Text
-            style={
-              styles.name
-            }
-          >
-            {ride.driverName}
-          </Text>
-
-
           <View
             style={
-              styles.ratingContainer
+              styles.headerIcon
             }
           >
 
             <Ionicons
-              name="shield-checkmark"
-              size={18}
+              name="checkmark-circle-outline"
+              size={34}
               color={
                 Colors.rider
               }
             />
 
-            <Text
-              style={
-                styles.verified
-              }
-            >
-              Verified Driver
-            </Text>
-
           </View>
+
+
+          <Text
+            style={
+              styles.title
+            }
+          >
+            Confirm Your Booking
+          </Text>
+
+
+          <Text
+            style={
+              styles.subtitle
+            }
+          >
+            Please review your ride details before continuing.
+          </Text>
 
         </View>
 
 
         {/* ============================================ */}
-        {/* DRIVER INFORMATION */}
+        {/* DRIVER */}
         {/* ============================================ */}
 
         <View
@@ -455,86 +202,83 @@ export default function RideDetailsScreen() {
                 styles.sectionTitle
               }
             >
-              Driver Information
+              Driver
             </Text>
 
           </View>
 
 
-          {loadingDriver ? (
+          <View
+            style={
+              styles.driverRow
+            }
+          >
 
             <View
               style={
-                styles.driverLoading
+                styles.driverAvatar
               }
             >
 
-              <ActivityIndicator
-                size="small"
+              <Ionicons
+                name="person"
+                size={30}
                 color={
                   Colors.rider
                 }
               />
 
+            </View>
+
+
+            <View
+              style={
+                styles.driverInfo
+              }
+            >
+
               <Text
                 style={
-                  styles.loadingText
+                  styles.driverName
                 }
               >
-                Loading vehicle information...
+                {ride.driverName}
               </Text>
+
+
+              <View
+                style={
+                  styles.verifiedRow
+                }
+              >
+
+                <Ionicons
+                  name="shield-checkmark"
+                  size={16}
+                  color={
+                    Colors.rider
+                  }
+                />
+
+                <Text
+                  style={
+                    styles.verifiedText
+                  }
+                >
+                  Verified Driver
+                </Text>
+
+              </View>
 
             </View>
 
-          ) : (
-
-            <>
-
-              {/* VEHICLE */}
-
-              <DetailRow
-                icon="car-outline"
-                title="Vehicle"
-                value={
-                  vehicleName ||
-                  ride.vehicle ||
-                  "Not provided"
-                }
-              />
-
-
-              {/* REGISTRATION */}
-
-              <DetailRow
-                icon="card-outline"
-                title="Registration"
-                value={
-                  registrationNumber ||
-                  "Not provided"
-                }
-              />
-
-
-              {/* SEATS */}
-
-              <DetailRow
-                icon="people-outline"
-                title="Seats Available"
-                value={
-                  `${availableSeats} seats`
-                }
-                last
-              />
-
-            </>
-
-          )}
+          </View>
 
         </View>
 
 
         {/* ============================================ */}
-        {/* TRIP INFORMATION */}
+        {/* TRIP DETAILS */}
         {/* ============================================ */}
 
         <View
@@ -571,7 +315,7 @@ export default function RideDetailsScreen() {
                 styles.sectionTitle
               }
             >
-              Trip Information
+              Trip Details
             </Text>
 
           </View>
@@ -610,18 +354,6 @@ export default function RideDetailsScreen() {
             value={
               ride.departure_time
             }
-          />
-
-
-          <DetailRow
-            icon="cash-outline"
-            title="Price"
-            value={
-              `R${Number(
-                ride.fare,
-              ).toFixed(2)}`
-            }
-            highlight
             last
           />
 
@@ -629,7 +361,7 @@ export default function RideDetailsScreen() {
 
 
         {/* ============================================ */}
-        {/* RIDE INFORMATION */}
+        {/* VEHICLE */}
         {/* ============================================ */}
 
         <View
@@ -651,7 +383,7 @@ export default function RideDetailsScreen() {
             >
 
               <Ionicons
-                name="information-circle-outline"
+                name="car-outline"
                 size={20}
                 color={
                   Colors.rider
@@ -666,36 +398,27 @@ export default function RideDetailsScreen() {
                 styles.sectionTitle
               }
             >
-              Ride Information
+              Vehicle Information
             </Text>
 
           </View>
 
 
           <DetailRow
+            icon="car-outline"
+            title="Vehicle"
+            value={
+              ride.vehicle ||
+              "Not provided"
+            }
+          />
+
+
+          <DetailRow
             icon="people-outline"
             title="Seats Available"
             value={
-              `${availableSeats} seats available`
-            }
-          />
-
-
-          <DetailRow
-            icon="checkmark-circle-outline"
-            title="Status"
-            value={
-              ride.status
-            }
-          />
-
-
-          <DetailRow
-            icon="document-text-outline"
-            title="Notes"
-            value={
-              ride.notes ||
-              "No additional notes"
+              `${ride.available_seats} seats`
             }
             last
           />
@@ -704,53 +427,32 @@ export default function RideDetailsScreen() {
 
 
         {/* ============================================ */}
-        {/* RIDE MATCH */}
+        {/* FARE */}
         {/* ============================================ */}
 
         <View
           style={
-            styles.matchCard
+            styles.fareCard
           }
         >
 
-          <View
-            style={
-              styles.matchIcon
-            }
-          >
-
-            <Ionicons
-              name="sparkles-outline"
-              size={22}
-              color={
-                Colors.rider
-              }
-            />
-
-          </View>
-
-
-          <View
-            style={
-              styles.matchContent
-            }
-          >
+          <View>
 
             <Text
               style={
-                styles.matchTitle
+                styles.fareLabel
               }
             >
-              Ride Match
+              Total Fare
             </Text>
 
 
             <Text
               style={
-                styles.matchDescription
+                styles.fareDescription
               }
             >
-              This ride matches your search preferences.
+              Choose your payment method on the next step.
             </Text>
 
           </View>
@@ -758,35 +460,59 @@ export default function RideDetailsScreen() {
 
           <Text
             style={
-              styles.matchPercentage
+              styles.fare
             }
           >
-            {ride.similarity !== undefined
-              ? `${Math.round(
-                  ride.similarity,
-                )}%`
-              : "—"}
+            R
+            {Number(
+              ride.fare,
+            ).toFixed(2)}
           </Text>
 
         </View>
 
 
         {/* ============================================ */}
-        {/* CONFIRM BOOKING */}
+        {/* INFORMATION */}
+        {/* ============================================ */}
+
+        <View
+          style={
+            styles.infoBox
+          }
+        >
+
+          <Ionicons
+            name="information-circle-outline"
+            size={22}
+            color={
+              Colors.rider
+            }
+          />
+
+
+          <Text
+            style={
+              styles.infoText
+            }
+          >
+            Your booking will only be created after you confirm your payment.
+          </Text>
+
+        </View>
+
+
+        {/* ============================================ */}
+        {/* CONTINUE */}
         {/* ============================================ */}
 
         <TouchableOpacity
           style={
-            styles.bookButton
+            styles.confirmButton
           }
 
-          onPress={() =>
-            navigation.navigate(
-              "PaymentMethod",
-              {
-                rideId: ride.id,
-              },
-            )
+          onPress={
+            continueToPayment
           }
 
           activeOpacity={
@@ -794,25 +520,18 @@ export default function RideDetailsScreen() {
           }
         >
 
-          <Ionicons
-            name="card-outline"
-            size={22}
-            color={
-              Colors.white
-            }
-          />
-
           <Text
             style={
-              styles.bookText
+              styles.confirmText
             }
           >
-            Confirm Booking
+            Continue to Payment
           </Text>
+
 
           <Ionicons
             name="arrow-forward"
-            size={20}
+            size={22}
             color={
               Colors.white
             }
@@ -825,6 +544,7 @@ export default function RideDetailsScreen() {
     </SafeAreaView>
 
   );
+
 }
 
 
@@ -843,8 +563,6 @@ interface DetailProps {
 
   last?: boolean;
 
-  highlight?: boolean;
-
 }
 
 
@@ -853,7 +571,6 @@ function DetailRow({
   title,
   value,
   last = false,
-  highlight = false,
 }: DetailProps) {
 
   return (
@@ -876,7 +593,7 @@ function DetailRow({
         <View
           style={
             styles.detailIcon
-        }
+          }
         >
 
           <Ionicons
@@ -904,12 +621,9 @@ function DetailRow({
 
 
       <Text
-        style={[
-          styles.value,
-
-          highlight &&
-            styles.highlightValue,
-        ]}
+        style={
+          styles.value
+        }
       >
         {value}
       </Text>
@@ -986,10 +700,10 @@ const styles =
 
 
     // ==================================================
-    // DRIVER HEADER
+    // HEADER
     // ==================================================
 
-    driverHeader: {
+    header: {
 
       alignItems:
         "center",
@@ -1000,30 +714,36 @@ const styles =
     },
 
 
-    avatar: {
+    headerIcon: {
 
       width:
-        120,
+        65,
 
       height:
-        120,
+        65,
 
       borderRadius:
-        60,
+        33,
 
       backgroundColor:
-        Colors.secondary,
+        "#EEF5FB",
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
 
       marginBottom:
-        15,
+        12,
 
     },
 
 
-    name: {
+    title: {
 
       fontSize:
-        28,
+        27,
 
       fontWeight:
         "700",
@@ -1037,21 +757,7 @@ const styles =
     },
 
 
-    ratingContainer: {
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      marginTop:
-        8,
-
-    },
-
-
-    verified: {
+    subtitle: {
 
       fontSize:
         14,
@@ -1059,8 +765,14 @@ const styles =
       color:
         Colors.textSecondary,
 
-      marginLeft:
-        6,
+      textAlign:
+        "center",
+
+      marginTop:
+        7,
+
+      lineHeight:
+        20,
 
     },
 
@@ -1169,13 +881,36 @@ const styles =
 
 
     // ==================================================
-    // DRIVER LOADING
+    // DRIVER
     // ==================================================
 
-    driverLoading: {
+    driverRow: {
 
-      minHeight:
-        100,
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      paddingVertical:
+        12,
+
+    },
+
+
+    driverAvatar: {
+
+      width:
+        60,
+
+      height:
+        60,
+
+      borderRadius:
+        30,
+
+      backgroundColor:
+        "#EEF5FB",
 
       justifyContent:
         "center",
@@ -1186,16 +921,54 @@ const styles =
     },
 
 
-    loadingText: {
+    driverInfo: {
+
+      marginLeft:
+        14,
+
+      flex: 1,
+
+    },
+
+
+    driverName: {
+
+      fontSize:
+        18,
+
+      fontWeight:
+        "700",
+
+      color:
+        Colors.primary,
+
+    },
+
+
+    verifiedRow: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
 
       marginTop:
-        8,
+        5,
+
+    },
+
+
+    verifiedText: {
 
       fontSize:
         13,
 
       color:
         Colors.textSecondary,
+
+      marginLeft:
+        5,
 
     },
 
@@ -1308,22 +1081,11 @@ const styles =
     },
 
 
-    highlightValue: {
-
-      color:
-        Colors.rider,
-
-      fontWeight:
-        "700",
-
-    },
-
-
     // ==================================================
-    // MATCH
+    // FARE
     // ==================================================
 
-    matchCard: {
+    fareCard: {
 
       backgroundColor:
         Colors.white,
@@ -1332,7 +1094,7 @@ const styles =
         20,
 
       padding:
-        17,
+        20,
 
       marginBottom:
         16,
@@ -1340,52 +1102,41 @@ const styles =
       flexDirection:
         "row",
 
+      justifyContent:
+        "space-between",
+
       alignItems:
         "center",
 
       elevation:
         3,
 
-    },
+      shadowColor:
+        Colors.shadow,
 
+      shadowOffset: {
 
-    matchIcon: {
+        width:
+          0,
 
-      width:
-        42,
+        height:
+          2,
 
-      height:
-        42,
+      },
 
-      borderRadius:
-        21,
+      shadowOpacity:
+        0.1,
 
-      backgroundColor:
-        "#EEF5FB",
-
-      justifyContent:
-        "center",
-
-      alignItems:
-        "center",
+      shadowRadius:
+        5,
 
     },
 
 
-    matchContent: {
-
-      flex: 1,
-
-      marginLeft:
-        12,
-
-    },
-
-
-    matchTitle: {
+    fareLabel: {
 
       fontSize:
-        16,
+        18,
 
       fontWeight:
         "700",
@@ -1396,33 +1147,76 @@ const styles =
     },
 
 
-    matchDescription: {
+    fareDescription: {
 
       fontSize:
-        13,
+        12,
 
       color:
         Colors.textSecondary,
 
       marginTop:
-        3,
+        4,
 
     },
 
 
-    matchPercentage: {
+    fare: {
 
       fontSize:
-        22,
+        25,
 
       fontWeight:
-        "700",
+        "800",
 
       color:
         Colors.rider,
 
+    },
+
+
+    // ==================================================
+    // INFO
+    // ==================================================
+
+    infoBox: {
+
+      backgroundColor:
+        "#EEF5FB",
+
+      borderRadius:
+        16,
+
+      padding:
+        15,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "flex-start",
+
+      marginBottom:
+        18,
+
+    },
+
+
+    infoText: {
+
+      flex: 1,
+
       marginLeft:
-        8,
+        10,
+
+      fontSize:
+        13,
+
+      lineHeight:
+        19,
+
+      color:
+        Colors.primary,
 
     },
 
@@ -1431,7 +1225,7 @@ const styles =
     // BUTTON
     // ==================================================
 
-    bookButton: {
+    confirmButton: {
 
       minHeight:
         58,
@@ -1466,7 +1260,7 @@ const styles =
     },
 
 
-    bookText: {
+    confirmText: {
 
       color:
         Colors.white,
@@ -1476,9 +1270,6 @@ const styles =
 
       fontWeight:
         "700",
-
-      marginLeft:
-        9,
 
       marginRight:
         10,

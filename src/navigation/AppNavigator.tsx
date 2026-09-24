@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   NavigationContainer,
@@ -8,15 +8,28 @@ import {
   createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 
+import {
+  ActivityIndicator,
+  View,
+} from "react-native";
+
+import Colors from "../constants/colors";
+
+import { supabase } from "../lib/supabaseClient";
+
+
 // ================= MAIN SCREENS =================
 
 import WelcomeScreen from "../screens/welcomeScreen";
 import RoleSelectionScreen from "../screens/roleSelectionScreen";
+import SignUpScreen from "../screens/auth/SignUpScreen";
+
 
 // ================= RIDER AUTHENTICATION =================
 
 import RiderLoginScreen from "../screens/auth/rider/riderLoginScreen";
 import RiderRegisterScreen from "../screens/auth/rider/riderRegisterScreen";
+
 
 // ================= SHARED AUTHENTICATION =================
 
@@ -25,14 +38,17 @@ import PasswordResetSentScreen from "../screens/auth/PasswordResetSent";
 import ResetPasswordScreen from "../screens/auth/ResetPassword";
 import EmailVerificationScreen from "../screens/auth/EmailVerification";
 
+
 // ================= DRIVER AUTHENTICATION =================
 
 import DriverLoginScreen from "../screens/auth/driver/driverLoginScreen";
 import DriverRegisterScreen from "../screens/auth/driver/driverRegisterScreen";
 
+
 // ================= DRIVER NAVIGATION =================
 
 import DriverNavigationTab from "./DriverNavigationTab";
+
 
 // ================= DRIVER SCREENS =================
 
@@ -43,6 +59,8 @@ import CreateRideOfferScreen from "../screens/driver/createRideOffer";
 
 import RideConfirmationScreen from "../screens/driver/rideConfirmationScreen";
 
+import DriverRideDetailsScreen from "../screens/driver/rideDetailsScreen";
+
 import RideOfferConfirmationScreen from "../screens/driver/rideOfferConfirmation";
 
 import ActiveTripScreen from "../screens/driver/activeTrip";
@@ -52,15 +70,19 @@ import ViewMyRideScreen from "../screens/driver/viewMyRide";
 import DriverProfileScreen from "../screens/driver/driverProfile";
 
 import DriverEditInformationScreen from "../screens/driver/driverSetupScreen";
+
 import DriverSettingsScreen from "../screens/driver/driverSettingsScreen";
+
 
 // ================= ADMIN =================
 
 import AdminLoginScreen from "../screens/auth/admin/adminLoginScreen";
 
+
 // ================= RIDER NAVIGATION =================
 
 import RiderTabNavigator from "./RiderNavigationTab";
+
 
 // ================= RIDER SCREENS =================
 
@@ -68,15 +90,23 @@ import SearchResultsScreen from "../screens/rider/searchResults";
 
 import RideDetailsScreen from "../screens/rider/rideDetails";
 
-import BookingConfirmedScreen from "../screens/rider/bookingConfirmed";
-import RiderSetupScreen from "../screens/rider/riderSetupScreen";
+import ConfirmBookingScreen
+  from "../screens/rider/confirmBooking";
 
-import PaymentMethodScreen from "../screens/rider/paymentMethod";
+import PaymentMethodScreen
+  from "../screens/rider/paymentMethod";
 
-import TrackDriverScreen from "../screens/rider/trackDriverScreen";
+import BookingConfirmedScreen
+  from "../screens/rider/BookingConfirmed";
 
-import TripReceiptScreen from "../screens/rider/tripReceiptScreen";
-import RiderSettingsScreen from "../screens/rider/riderSettingsScreen";
+import RiderSetupScreen
+  from "../screens/rider/riderSetupScreen";
+
+import TrackDriverScreen
+  from "../screens/rider/trackDriverScreen";
+
+import RiderSettingsScreen
+  from "../screens/rider/riderSettingsScreen";
 
 
 // ======================================================
@@ -109,7 +139,6 @@ export type Ride = {
 
   vehicle: string;
 
-  // Used for rider search matching
   similarity?: number;
 
 };
@@ -127,20 +156,19 @@ export type RootStackParamList = {
 
   RoleSelection: undefined;
 
-
   // ================= RIDER AUTH =================
 
   RiderLogin: undefined;
 
   RiderRegister: undefined;
 
+  SignUp: undefined;
 
   // ================= DRIVER AUTH =================
 
   DriverLogin: undefined;
 
   DriverRegister: undefined;
-
 
   // ================= EMAIL VERIFICATION =================
 
@@ -153,7 +181,6 @@ export type RootStackParamList = {
     role: "rider" | "driver";
 
   };
-
 
   // ================= PASSWORD RESET =================
 
@@ -179,14 +206,9 @@ export type RootStackParamList = {
 
   };
 
-
   // ================= RIDER =================
 
   RiderHome: undefined;
-
-
-  // IMPORTANT:
-  // SearchResults now receives the rider's search information.
 
   SearchResults: {
 
@@ -202,17 +224,29 @@ export type RootStackParamList = {
 
   };
 
-
   RideDetails: {
 
     ride: Ride;
 
   };
 
+  ConfirmBooking: {
 
-  BookingConfirmed: undefined;
+    ride: Ride;
 
-  PaymentMethod: undefined;
+  };
+
+  PaymentMethod: {
+
+    rideId: string;
+
+  };
+
+  BookingConfirmed: {
+
+    bookingId: string;
+
+  };
 
   TrackDriver: undefined;
 
@@ -222,7 +256,6 @@ export type RootStackParamList = {
 
   RiderSettings: undefined;
 
-
   // ================= DRIVER =================
 
   DriverHome: undefined;
@@ -230,7 +263,6 @@ export type RootStackParamList = {
   DriverEditInformation: undefined;
 
   RiderRequests: undefined;
-
 
   RiderRequestDetails: {
 
@@ -258,15 +290,23 @@ export type RootStackParamList = {
 
   };
 
-
   CreateRideOffer: undefined;
 
-  RideConfirmation: undefined;
+  RideConfirmation: {
+
+    rideId: string;
+
+  };
+
+  DriverRideDetails: {
+
+    rideId: string;
+
+  };
 
   ActiveTrip: undefined;
 
   ViewMyRide: undefined;
-
 
   RideOfferConfirmation: {
 
@@ -274,11 +314,9 @@ export type RootStackParamList = {
 
   };
 
-
   DriverProfile: undefined;
 
   DriverSettings: undefined;
-
 
   // ================= ADMIN =================
 
@@ -303,14 +341,224 @@ const Stack =
 
 export default function AppNavigator() {
 
+  const [loading, setLoading] =
+    useState(true);
+
+  const [initialRoute, setInitialRoute] =
+    useState<keyof RootStackParamList>(
+      "Welcome"
+    );
+
+
+  // ======================================================
+  // CHECK EXISTING LOGIN SESSION
+  // ======================================================
+
+  useEffect(() => {
+
+    const checkSession = async () => {
+
+      try {
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession();
+
+
+        // ================================================
+        // NO SESSION
+        // ================================================
+
+        if (!session?.user) {
+
+          setInitialRoute(
+            "Welcome"
+          );
+
+          setLoading(
+            false
+          );
+
+          return;
+
+        }
+
+
+        // ================================================
+        // GET USER PROFILE
+        // ================================================
+
+        const {
+          data: profile,
+          error,
+        } =
+          await supabase
+            .from("profiles")
+            .select("role")
+            .eq(
+              "id",
+              session.user.id
+            )
+            .single();
+
+
+        if (error) {
+
+          console.error(
+            "Error loading user profile:",
+            error.message
+          );
+
+          setInitialRoute(
+            "Welcome"
+          );
+
+          setLoading(
+            false
+          );
+
+          return;
+
+        }
+
+
+        // ================================================
+        // CHECK USER ROLE
+        // ================================================
+
+        if (
+          profile?.role ===
+          "rider"
+        ) {
+
+          console.log(
+            "Existing rider session found."
+          );
+
+          setInitialRoute(
+            "RiderHome"
+          );
+
+        }
+
+        else if (
+          profile?.role ===
+          "driver"
+        ) {
+
+          console.log(
+            "Existing driver session found."
+          );
+
+          setInitialRoute(
+            "DriverHome"
+          );
+
+        }
+
+        else {
+
+          console.log(
+            "No valid user role found."
+          );
+
+          setInitialRoute(
+            "Welcome"
+          );
+
+        }
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "Session check error:",
+          error
+        );
+
+        setInitialRoute(
+          "Welcome"
+        );
+
+      }
+
+      finally {
+
+        setLoading(
+          false
+        );
+
+      }
+
+    };
+
+
+    checkSession();
+
+  }, []);
+
+
+  // ======================================================
+  // LOADING SCREEN
+  // ======================================================
+
+  if (loading) {
+
+    return (
+
+      <View
+        style={{
+          flex: 1,
+
+          backgroundColor:
+            Colors.background,
+
+          justifyContent:
+            "center",
+
+          alignItems:
+            "center",
+        }}
+      >
+
+        <ActivityIndicator
+          size="large"
+          color={
+            Colors.primary
+          }
+        />
+
+      </View>
+
+    );
+
+  }
+
+
+  // ======================================================
+  // NAVIGATION
+  // ======================================================
+
   return (
 
     <NavigationContainer>
 
       <Stack.Navigator
-        initialRouteName="Welcome"
+        key={
+          initialRoute
+        }
+
+        initialRouteName={
+          initialRoute
+        }
+
         screenOptions={{
-          headerShown: false,
+          headerShown:
+            false,
         }}
       >
 
@@ -318,12 +566,23 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="Welcome"
-          component={WelcomeScreen}
+          component={
+            WelcomeScreen
+          }
         />
 
         <Stack.Screen
           name="RoleSelection"
-          component={RoleSelectionScreen}
+          component={
+            RoleSelectionScreen
+          }
+        />
+
+        <Stack.Screen
+          name="SignUp"
+          component={
+            SignUpScreen
+          }
         />
 
 
@@ -331,12 +590,16 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="RiderLogin"
-          component={RiderLoginScreen}
+          component={
+            RiderLoginScreen
+          }
         />
 
         <Stack.Screen
           name="RiderRegister"
-          component={RiderRegisterScreen}
+          component={
+            RiderRegisterScreen
+          }
         />
 
 
@@ -344,12 +607,16 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="DriverLogin"
-          component={DriverLoginScreen}
+          component={
+            DriverLoginScreen
+          }
         />
 
         <Stack.Screen
           name="DriverRegister"
-          component={DriverRegisterScreen}
+          component={
+            DriverRegisterScreen
+          }
         />
 
 
@@ -357,22 +624,30 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="ForgotPassword"
-          component={ForgotPasswordScreen}
+          component={
+            ForgotPasswordScreen
+          }
         />
 
         <Stack.Screen
           name="PasswordResetSent"
-          component={PasswordResetSentScreen}
+          component={
+            PasswordResetSentScreen
+          }
         />
 
         <Stack.Screen
           name="ResetPassword"
-          component={ResetPasswordScreen}
+          component={
+            ResetPasswordScreen
+          }
         />
 
         <Stack.Screen
           name="EmailVerification"
-          component={EmailVerificationScreen}
+          component={
+            EmailVerificationScreen
+          }
         />
 
 
@@ -380,7 +655,9 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="RiderHome"
-          component={RiderTabNavigator}
+          component={
+            RiderTabNavigator
+          }
         />
 
 
@@ -388,42 +665,58 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="SearchResults"
-          component={SearchResultsScreen}
+          component={
+            SearchResultsScreen
+          }
         />
 
         <Stack.Screen
           name="RideDetails"
-          component={RideDetailsScreen}
+          component={
+            RideDetailsScreen
+          }
         />
 
         <Stack.Screen
-          name="BookingConfirmed"
-          component={BookingConfirmedScreen}
+          name="ConfirmBooking"
+          component={
+            ConfirmBookingScreen
+          }
         />
 
         <Stack.Screen
           name="PaymentMethod"
-          component={PaymentMethodScreen}
+          component={
+            PaymentMethodScreen
+          }
+        />
+
+        <Stack.Screen
+          name="BookingConfirmed"
+          component={
+            BookingConfirmedScreen
+          }
         />
 
         <Stack.Screen
           name="TrackDriver"
-          component={TrackDriverScreen}
-        />
-
-        <Stack.Screen
-          name="TripReceipt"
-          component={TripReceiptScreen}
+          component={
+            TrackDriverScreen
+          }
         />
 
         <Stack.Screen
           name="RiderEditInformation"
-          component={RiderSetupScreen}
+          component={
+            RiderSetupScreen
+          }
         />
 
         <Stack.Screen
           name="RiderSettings"
-          component={RiderSettingsScreen}
+          component={
+            RiderSettingsScreen
+          }
         />
 
 
@@ -431,7 +724,9 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="DriverHome"
-          component={DriverNavigationTab}
+          component={
+            DriverNavigationTab
+          }
         />
 
 
@@ -439,7 +734,9 @@ export default function AppNavigator() {
 
         <Stack.Screen
           name="RiderRequests"
-          component={RiderRequestsScreen}
+          component={
+            RiderRequestsScreen
+          }
         />
 
         <Stack.Screen
@@ -460,6 +757,13 @@ export default function AppNavigator() {
           name="RideConfirmation"
           component={
             RideConfirmationScreen
+          }
+        />
+
+        <Stack.Screen
+          name="DriverRideDetails"
+          component={
+            DriverRideDetailsScreen
           }
         />
 

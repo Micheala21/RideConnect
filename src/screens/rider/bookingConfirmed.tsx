@@ -1,532 +1,1174 @@
+import React, {
+  useEffect,
+  useState,
+} from "react";
 
-import React from "react";
 import {
+  SafeAreaView,
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import {
+  Ionicons,
+} from "@expo/vector-icons";
+
+import {
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
 
 import Colors from "../../constants/colors";
-import { RootStackParamList } from "../../navigation/AppNavigator";
 
-type NavigationProp = NativeStackNavigationProp<
+import {
   RootStackParamList,
-  "RiderHome"
->;
+} from "../../navigation/AppNavigator";
 
-export default function BookingConfirmedScreen() {
-  const navigation = useNavigation<NavigationProp>();
+import {
+  supabase,
+} from "../../lib/supabaseClient";
 
-  const booking = {
-    driver: "Alice Johnson",
-    vehicle: "Toyota Prius",
-    rating: 4.9,
-    price: "R120",
-    pickupTime: "08:30 AM",
-    pickupLocation: "CPUT Bellville Campus",
-    destination: "Cape Town CBD",
-    seats: 3,
-    avatar: "https://placehold.co/150x150",
+
+// =====================================================
+// NAVIGATION
+// =====================================================
+
+type Props =
+  NativeStackScreenProps<
+    RootStackParamList,
+    "BookingConfirmed"
+  >;
+
+
+// =====================================================
+// BOOKING STATUS
+// =====================================================
+
+type BookingStatus =
+  | "pending"
+  | "confirmed"
+  | "cancelled"
+  | "completed";
+
+
+// =====================================================
+// SCREEN
+// =====================================================
+
+export default function BookingConfirmedScreen({
+  navigation,
+  route,
+}: Props) {
+
+  // ===================================================
+  // REAL BOOKING ID
+  // ===================================================
+
+  const {
+    bookingId,
+  } = route.params;
+
+
+  // ===================================================
+  // RIDE ID
+  // ===================================================
+
+  const [
+    rideId,
+    setRideId,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+
+  // ===================================================
+  // BOOKING STATUS
+  // ===================================================
+
+  const [
+    bookingStatus,
+    setBookingStatus,
+  ] =
+    useState<BookingStatus>(
+      "pending",
+    );
+
+
+  // ===================================================
+  // LOADING
+  // ===================================================
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
+
+
+  // ===================================================
+  // LOAD BOOKING + REALTIME
+  // ===================================================
+
+  useEffect(() => {
+
+    let active = true;
+
+
+    // =================================================
+    // LOAD CURRENT BOOKING
+    // =================================================
+
+    const loadBooking = async () => {
+
+      try {
+
+        const {
+          data: booking,
+          error,
+        } =
+          await supabase
+            .from("bookings")
+            .select(
+              "status, ride_id",
+            )
+            .eq(
+              "id",
+              bookingId,
+            )
+            .single();
+
+
+        if (error) {
+
+          console.error(
+            "Error loading booking:",
+            error.message,
+          );
+
+          return;
+
+        }
+
+
+        if (
+          active &&
+          booking
+        ) {
+
+          if (
+            booking.status
+          ) {
+
+            setBookingStatus(
+              booking.status as BookingStatus,
+            );
+
+          }
+
+
+          if (
+            booking.ride_id
+          ) {
+
+            setRideId(
+              booking.ride_id,
+            );
+
+          }
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Booking status error:",
+          error,
+        );
+
+      } finally {
+
+        if (active) {
+
+          setLoading(
+            false,
+          );
+
+        }
+
+      }
+
+    };
+
+
+    loadBooking();
+
+
+    // =================================================
+    // REALTIME BOOKING LISTENER
+    // =================================================
+
+    const bookingChannel =
+      supabase
+        .channel(
+          `booking-${bookingId}`,
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+
+            schema: "public",
+
+            table: "bookings",
+
+            filter:
+              `id=eq.${bookingId}`,
+          },
+
+          (payload) => {
+
+            console.log(
+              "BOOKING UPDATED:",
+              payload.new,
+            );
+
+
+            const updatedBooking =
+              payload.new as {
+                status: string;
+              };
+
+
+            if (
+              active &&
+              (
+                updatedBooking.status ===
+                  "pending" ||
+
+                updatedBooking.status ===
+                  "confirmed" ||
+
+                updatedBooking.status ===
+                  "cancelled" ||
+
+                updatedBooking.status ===
+                  "completed"
+              )
+            ) {
+
+              setBookingStatus(
+                updatedBooking.status as BookingStatus,
+              );
+
+            }
+
+          },
+        )
+        .subscribe(
+          status => {
+
+            console.log(
+              "Booking realtime status:",
+              status,
+            );
+
+          },
+        );
+
+
+    // =================================================
+    // CLEANUP BOOKING LISTENER
+    // =================================================
+
+    return () => {
+
+      active = false;
+
+      supabase.removeChannel(
+        bookingChannel,
+      );
+
+    };
+
+  }, [bookingId]);
+
+
+  // ===================================================
+  // REALTIME RIDE DELETION
+  // ===================================================
+
+  useEffect(() => {
+
+    if (!rideId) {
+      return;
+    }
+
+
+    let active = true;
+
+
+    const rideChannel =
+      supabase
+        .channel(
+          `booking-ride-deletion-${rideId}`,
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+
+            schema: "public",
+
+            table: "rides",
+
+            filter:
+              `id=eq.${rideId}`,
+          },
+
+          () => {
+
+            if (!active) {
+              return;
+            }
+
+
+            console.log(
+              "BOOKING RIDE DELETED:",
+              rideId,
+            );
+
+
+            Alert.alert(
+              "Ride No Longer Available",
+              "The driver has cancelled and removed this ride.",
+              [
+                {
+                  text: "OK",
+
+                  onPress: () =>
+                    navigation.navigate(
+                      "RiderHome",
+                    ),
+                },
+              ],
+            );
+
+          },
+        )
+        .subscribe(
+          status => {
+
+            console.log(
+              "Ride deletion realtime status:",
+              status,
+            );
+
+          },
+        );
+
+
+    // =================================================
+    // CLEANUP RIDE LISTENER
+    // =================================================
+
+    return () => {
+
+      active = false;
+
+      supabase.removeChannel(
+        rideChannel,
+      );
+
+    };
+
+  }, [rideId]);
+
+
+  // ===================================================
+  // STATUS CONTENT
+  // ===================================================
+
+  const getStatusContent = () => {
+
+    switch (
+      bookingStatus
+    ) {
+
+      // ===============================================
+      // CONFIRMED
+      // ===============================================
+
+      case "confirmed":
+
+        return {
+
+          icon:
+            "checkmark-circle" as const,
+
+          title:
+            "Booking Confirmed!",
+
+          message:
+            "Your driver has accepted your booking.",
+
+          subMessage:
+            "Your ride is confirmed and ready to go.",
+
+        };
+
+
+      // ===============================================
+      // CANCELLED
+      // ===============================================
+
+      case "cancelled":
+
+        return {
+
+          icon:
+            "close-circle" as const,
+
+          title:
+            "Booking Cancelled",
+
+          message:
+            "Your driver did not accept this booking.",
+
+          subMessage:
+            "You can return to the home screen and choose another ride.",
+
+        };
+
+
+      // ===============================================
+      // COMPLETED
+      // ===============================================
+
+      case "completed":
+
+        return {
+
+          icon:
+            "checkmark-done-circle" as const,
+
+          title:
+            "Trip Completed",
+
+          message:
+            "Your ride has been completed.",
+
+          subMessage:
+            "Thank you for using RideConnect.",
+
+        };
+
+
+      // ===============================================
+      // PENDING
+      // ===============================================
+
+      case "pending":
+
+      default:
+
+        return {
+
+          icon:
+            "time-outline" as const,
+
+          title:
+            "Waiting for Driver",
+
+          message:
+            "Your booking has been sent to the driver.",
+
+          subMessage:
+            "Please wait while the driver reviews your request.",
+
+        };
+
+    }
+
   };
 
-  return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Back Button */}
 
-      <View style={styles.topSection}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
+  const statusContent =
+    getStatusContent();
+
+
+  // ===================================================
+  // LOADING SCREEN
+  // ===================================================
+
+  if (loading) {
+
+    return (
+
+      <SafeAreaView
+        style={
+          styles.container
+        }
+      >
+
+        <View
+          style={
+            styles.loadingContainer
+          }
         >
-          <Ionicons
-            name="arrow-back"
-            size={26}
-            color={Colors.primary}
+
+          <ActivityIndicator
+            size="large"
+            color={
+              Colors.rider
+            }
           />
+
+
+          <Text
+            style={
+              styles.loadingText
+            }
+          >
+            Loading booking status...
+          </Text>
+
+        </View>
+
+      </SafeAreaView>
+
+    );
+
+  }
+
+
+  // ===================================================
+  // MAIN UI
+  // ===================================================
+
+  return (
+
+    <SafeAreaView
+      style={
+        styles.container
+      }
+    >
+
+      <View
+        style={
+          styles.content
+        }
+      >
+
+        {/* ================================================= */}
+        {/* STATUS ICON */}
+        {/* ================================================= */}
+
+        <View
+          style={
+            styles.successCircle
+          }
+        >
+
+          <Ionicons
+            name={
+              statusContent.icon
+            }
+            size={65}
+            color={
+              Colors.white
+            }
+          />
+
+        </View>
+
+
+        {/* ================================================= */}
+        {/* TITLE */}
+        {/* ================================================= */}
+
+        <Text
+          style={
+            styles.title
+          }
+        >
+          {
+            statusContent.title
+          }
+        </Text>
+
+
+        {/* ================================================= */}
+        {/* MESSAGE */}
+        {/* ================================================= */}
+
+        <Text
+          style={
+            styles.message
+          }
+        >
+          {
+            statusContent.message
+          }
+        </Text>
+
+
+        <Text
+          style={
+            styles.subMessage
+          }
+        >
+          {
+            statusContent.subMessage
+          }
+        </Text>
+
+
+        {/* ================================================= */}
+        {/* BOOKING STATUS CARD */}
+        {/* ================================================= */}
+
+        <View
+          style={
+            styles.confirmationCard
+          }
+        >
+
+          <View
+            style={
+              styles.confirmationRow
+            }
+          >
+
+            <Ionicons
+              name={
+                bookingStatus ===
+                "confirmed"
+
+                  ? "checkmark-circle"
+
+                  : bookingStatus ===
+                    "cancelled"
+
+                  ? "close-circle"
+
+                  : bookingStatus ===
+                    "completed"
+
+                  ? "checkmark-done-circle"
+
+                  : "time-outline"
+              }
+
+              size={24}
+
+              color={
+                Colors.rider
+              }
+            />
+
+
+            <View
+              style={
+                styles.confirmationTextContainer
+              }
+            >
+
+              <Text
+                style={
+                  styles.confirmationTitle
+                }
+              >
+                {
+                  bookingStatus ===
+                  "pending"
+
+                    ? "Waiting for Driver"
+
+                    : bookingStatus ===
+                      "confirmed"
+
+                    ? "Driver Accepted"
+
+                    : bookingStatus ===
+                      "cancelled"
+
+                    ? "Booking Cancelled"
+
+                    : "Trip Completed"
+                }
+              </Text>
+
+
+              <Text
+                style={
+                  styles.confirmationText
+                }
+              >
+                {
+                  bookingStatus ===
+                  "pending"
+
+                    ? "Your booking is waiting for the driver's response."
+
+                    : bookingStatus ===
+                      "confirmed"
+
+                    ? "Your driver has accepted the booking."
+
+                    : bookingStatus ===
+                      "cancelled"
+
+                    ? "This booking has been cancelled."
+
+                    : "This trip has been completed."
+                }
+              </Text>
+
+            </View>
+
+          </View>
+
+        </View>
+
+
+        {/* ================================================= */}
+        {/* TRACK DRIVER */}
+        {/* ================================================= */}
+
+        {
+          bookingStatus ===
+            "confirmed" && (
+
+            <TouchableOpacity
+              style={
+                styles.trackButton
+              }
+
+              onPress={() =>
+                navigation.navigate(
+                  "TrackDriver",
+                )
+              }
+
+              activeOpacity={
+                0.8
+              }
+            >
+
+              <Ionicons
+                name="location-outline"
+                size={21}
+                color={
+                  Colors.white
+                }
+              />
+
+
+              <Text
+                style={
+                  styles.trackButtonText
+                }
+              >
+                Track Driver
+              </Text>
+
+            </TouchableOpacity>
+
+          )
+        }
+
+
+        {/* ================================================= */}
+        {/* BACK TO HOME */}
+        {/* ================================================= */}
+
+        <TouchableOpacity
+          style={
+            styles.homeButton
+          }
+
+          onPress={() =>
+            navigation.navigate(
+              "RiderHome",
+            )
+          }
+
+          activeOpacity={
+            0.8
+          }
+        >
+
+          <Text
+            style={
+              styles.homeButtonText
+            }
+          >
+            Back to Home
+          </Text>
+
         </TouchableOpacity>
+
       </View>
 
-      {/* Success Section */}
+    </SafeAreaView>
 
-      <View style={styles.successCircle}>
-        <Ionicons
-          name="checkmark"
-          size={55}
-          color={Colors.white}
-        />
-      </View>
-
-      <Text style={styles.heading}>
-        Booking Confirmed!
-      </Text>
-
-      <Text style={styles.subHeading}>
-        Your driver has accepted your booking.
-      </Text>
-
-      {/* Driver Image */}
-
-      <View style={styles.avatarContainer}>
-        <Image
-          source={{ uri: booking.avatar }}
-          style={styles.avatar}
-        />
-
-        <View style={styles.verifiedBadge}>
-          <Ionicons
-            name="checkmark"
-            size={15}
-            color={Colors.white}
-          />
-        </View>
-      </View>
-
-      {/* Driver Details Card */}
-
-      <View style={styles.card}>
-
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderIcon}>
-            <Ionicons
-              name="person-outline"
-              size={21}
-              color={Colors.rider}
-            />
-          </View>
-
-          <Text style={styles.sectionTitle}>
-            Driver Details
-          </Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <Ionicons
-              name="person-outline"
-              size={18}
-              color={Colors.rider}
-            />
-          </View>
-
-          <View style={styles.detailText}>
-            <Text style={styles.label}>Driver</Text>
-            <Text style={styles.value}>
-              {booking.driver}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <Ionicons
-              name="car-outline"
-              size={18}
-              color={Colors.rider}
-            />
-          </View>
-
-          <View style={styles.detailText}>
-            <Text style={styles.label}>Vehicle</Text>
-            <Text style={styles.value}>
-              {booking.vehicle}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <Ionicons
-              name="star-outline"
-              size={18}
-              color={Colors.rider}
-            />
-          </View>
-
-          <View style={styles.detailText}>
-            <Text style={styles.label}>Rating</Text>
-            <Text style={styles.value}>
-              {booking.rating}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <Ionicons
-              name="people-outline"
-              size={18}
-              color={Colors.rider}
-            />
-          </View>
-
-          <View style={styles.detailText}>
-            <Text style={styles.label}>Available Seats</Text>
-            <Text style={styles.value}>
-              {booking.seats}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.separator} />
-
-        {/* Trip Details */}
-
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderIcon}>
-            <Ionicons
-              name="navigate-outline"
-              size={21}
-              color={Colors.rider}
-            />
-          </View>
-
-          <Text style={styles.sectionTitle}>
-            Trip Details
-          </Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <Ionicons
-              name="location-outline"
-              size={18}
-              color={Colors.rider}
-            />
-          </View>
-
-          <View style={styles.detailText}>
-            <Text style={styles.label}>Pickup</Text>
-            <Text style={styles.value}>
-              {booking.pickupLocation}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <Ionicons
-              name="flag-outline"
-              size={18}
-              color={Colors.rider}
-            />
-          </View>
-
-          <View style={styles.detailText}>
-            <Text style={styles.label}>Destination</Text>
-            <Text style={styles.value}>
-              {booking.destination}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <Ionicons
-              name="time-outline"
-              size={18}
-              color={Colors.rider}
-            />
-          </View>
-
-          <View style={styles.detailText}>
-            <Text style={styles.label}>Pickup Time</Text>
-            <Text style={styles.value}>
-              {booking.pickupTime}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.separator} />
-
-        {/* Fare */}
-
-        <View style={styles.priceContainer}>
-          <View>
-            <Text style={styles.priceLabel}>
-              Total Fare
-            </Text>
-
-            <Text style={styles.priceSubtext}>
-              Payment confirmed
-            </Text>
-          </View>
-
-          <Text style={styles.price}>
-            {booking.price}
-          </Text>
-        </View>
-      </View>
-
-      {/* Track Driver Button */}
-
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.navigate("TrackDriver")}
-        activeOpacity={0.8}
-      >
-        <Ionicons
-          name="navigate"
-          size={21}
-          color={Colors.white}
-        />
-
-        <Text style={styles.primaryButtonText}>
-          Track Driver
-        </Text>
-
-        <Ionicons
-          name="arrow-forward"
-          size={20}
-          color={Colors.white}
-          style={styles.buttonArrow}
-        />
-      </TouchableOpacity>
-
-      {/* Back to Home */}
-
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={() => navigation.navigate("RiderHome")}
-        activeOpacity={0.8}
-      >
-        <Ionicons
-          name="home-outline"
-          size={20}
-          color={Colors.rider}
-        />
-
-        <Text style={styles.secondaryButtonText}>
-          Back to Home
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
   );
+
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: Colors.background,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 40,
-  },
 
-  topSection: {
-    marginBottom: 10,
-  },
+// =====================================================
+// STYLES
+// =====================================================
 
-  backButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 23,
-    backgroundColor: Colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 3,
-  },
+const styles =
+  StyleSheet.create({
 
-  successCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.success,
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    marginTop: 5,
-    marginBottom: 18,
-    elevation: 4,
-  },
+    container: {
 
-  heading: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: Colors.primary,
-    textAlign: "center",
-  },
+      flex: 1,
 
-  subHeading: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: "center",
-    marginTop: 7,
-    marginBottom: 22,
-    lineHeight: 21,
-  },
+      backgroundColor:
+        Colors.background,
 
-  avatarContainer: {
-    alignSelf: "center",
-    position: "relative",
-    marginBottom: 25,
-  },
+    },
 
-  avatar: {
-    width: 115,
-    height: 115,
-    borderRadius: 58,
-    backgroundColor: Colors.secondary,
-    borderWidth: 4,
-    borderColor: Colors.white,
-  },
 
-  verifiedBadge: {
-    position: "absolute",
-    right: 2,
-    bottom: 3,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: Colors.rider,
-    borderWidth: 3,
-    borderColor: Colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    // =================================================
+    // LOADING
+    // =================================================
 
-  card: {
-    width: "100%",
-    backgroundColor: Colors.white,
-    borderRadius: 20,
-    padding: 20,
-    elevation: 4,
-  },
+    loadingContainer: {
 
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-  },
+      flex: 1,
 
-  cardHeaderIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#EEF5FB",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 11,
-  },
+      justifyContent:
+        "center",
 
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
+      alignItems:
+        "center",
 
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 13,
-  },
+    },
 
-  detailIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
 
-  detailText: {
-    flex: 1,
-  },
+    loadingText: {
 
-  label: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    marginBottom: 2,
-  },
+      marginTop:
+        12,
 
-  value: {
-    color: Colors.primary,
-    fontSize: 15,
-    fontWeight: "600",
-  },
+      fontSize:
+        15,
 
-  separator: {
-    height: 1,
-    backgroundColor: "#E6EAF0",
-    marginVertical: 10,
-  },
+      color:
+        Colors.textSecondary,
 
-  priceContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 3,
-  },
+    },
 
-  priceLabel: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
 
-  priceSubtext: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 3,
-  },
+    // =================================================
+    // CONTENT
+    // =================================================
 
-  price: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: Colors.rider,
-  },
+    content: {
 
-  primaryButton: {
-    width: "100%",
-    height: 58,
-    backgroundColor: Colors.rider,
-    borderRadius: 16,
-    marginTop: 25,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 3,
-  },
+      flex: 1,
 
-  primaryButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
+      alignItems:
+        "center",
 
-  buttonArrow: {
-    position: "absolute",
-    right: 18,
-  },
+      justifyContent:
+        "center",
 
-  secondaryButton: {
-    width: "100%",
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Colors.rider,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 13,
-  },
+      paddingHorizontal:
+        25,
 
-  secondaryButtonText: {
-    color: Colors.rider,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
-});
+    },
+
+
+    // =================================================
+    // STATUS ICON
+    // =================================================
+
+    successCircle: {
+
+      width:
+        115,
+
+      height:
+        115,
+
+      borderRadius:
+        58,
+
+      backgroundColor:
+        Colors.rider,
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      marginBottom:
+        25,
+
+      elevation:
+        5,
+
+    },
+
+
+    // =================================================
+    // TITLE
+    // =================================================
+
+    title: {
+
+      fontSize:
+        28,
+
+      fontWeight:
+        "800",
+
+      color:
+        Colors.primary,
+
+      textAlign:
+        "center",
+
+      marginBottom:
+        12,
+
+    },
+
+
+    // =================================================
+    // MESSAGE
+    // =================================================
+
+    message: {
+
+      fontSize:
+        17,
+
+      fontWeight:
+        "600",
+
+      color:
+        Colors.primary,
+
+      textAlign:
+        "center",
+
+      marginBottom:
+        8,
+
+    },
+
+
+    subMessage: {
+
+      fontSize:
+        14,
+
+      color:
+        Colors.textSecondary,
+
+      textAlign:
+        "center",
+
+      lineHeight:
+        21,
+
+      marginBottom:
+        25,
+
+      paddingHorizontal:
+        10,
+
+    },
+
+
+    // =================================================
+    // STATUS CARD
+    // =================================================
+
+    confirmationCard: {
+
+      width:
+        "100%",
+
+      backgroundColor:
+        Colors.white,
+
+      borderRadius:
+        18,
+
+      padding:
+        18,
+
+      marginBottom:
+        30,
+
+      elevation:
+        3,
+
+    },
+
+
+    confirmationRow: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+    },
+
+
+    confirmationTextContainer: {
+
+      flex: 1,
+
+      marginLeft:
+        12,
+
+    },
+
+
+    confirmationTitle: {
+
+      fontSize:
+        15,
+
+      fontWeight:
+        "700",
+
+      color:
+        Colors.primary,
+
+      marginBottom:
+        4,
+
+    },
+
+
+    confirmationText: {
+
+      fontSize:
+        13,
+
+      color:
+        Colors.textSecondary,
+
+      lineHeight:
+        19,
+
+    },
+
+
+    // =================================================
+    // TRACK DRIVER
+    // =================================================
+
+    trackButton: {
+
+      width:
+        "100%",
+
+      height:
+        56,
+
+      borderRadius:
+        16,
+
+      backgroundColor:
+        Colors.rider,
+
+      flexDirection:
+        "row",
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      elevation:
+        3,
+
+      marginBottom:
+        12,
+
+    },
+
+
+    trackButtonText: {
+
+      color:
+        Colors.white,
+
+      fontSize:
+        16,
+
+      fontWeight:
+        "700",
+
+      marginLeft:
+        8,
+
+    },
+
+
+    // =================================================
+    // HOME BUTTON
+    // =================================================
+
+    homeButton: {
+
+      width:
+        "100%",
+
+      height:
+        56,
+
+      borderRadius:
+        16,
+
+      backgroundColor:
+        Colors.white,
+
+      borderWidth:
+        1.5,
+
+      borderColor:
+        Colors.rider,
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+    },
+
+
+    homeButtonText: {
+
+      color:
+        Colors.rider,
+
+      fontSize:
+        16,
+
+      fontWeight:
+        "700",
+
+    },
+
+  });

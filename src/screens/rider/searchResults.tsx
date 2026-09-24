@@ -100,10 +100,39 @@ export default function SearchResultsScreen() {
   // ==========================================
   // LOAD RIDES FROM SUPABASE
   // ==========================================
+useEffect(() => {
+  loadRides();
 
-  useEffect(() => {
-    loadRides();
-  }, []);
+  const channel = supabase
+    .channel("rides-realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "rides",
+      },
+      (payload) => {
+        console.log(
+          "RIDE REALTIME UPDATE:",
+          payload.eventType,
+          payload
+        );
+
+        loadRides();
+      }
+    )
+    .subscribe((status) => {
+      console.log(
+        "RIDE REALTIME STATUS:",
+        status
+      );
+    });
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
 
   const loadRides = async () => {
     try {
