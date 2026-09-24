@@ -97,7 +97,7 @@ import PaymentMethodScreen
   from "../screens/rider/paymentMethod";
 
 import BookingConfirmedScreen
-  from "../screens/rider/BookingConfirmed";
+  from "../screens/rider/bookingConfirmed";
 
 import RiderSetupScreen
   from "../screens/rider/riderSetupScreen";
