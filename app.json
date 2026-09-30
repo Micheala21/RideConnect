@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "RideConnect",
+    "slug": "rideconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/favicon.jpeg",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mickey_21.rideconnect"
+    },
+    "web": {
+      "favicon": "./assets/favicon.jpeg"
+    },
+    "plugins": [
+      "expo-status-bar",
+      "expo-font",
+      "@maplibre/maplibre-react-native",
+      "expo-sharing"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0a6767a1-2f25-418f-ae4b-ae13f6b9de94"
+      }
+    },
+    "owner": "mickey_21"
+  }
+}
